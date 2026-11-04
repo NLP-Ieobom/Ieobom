@@ -1,0 +1,45 @@
+# ---------- 공통 ----------
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db
+
+# ---------- 에디터 ----------
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# ---------- Python (backend) ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# ---------- Node (frontend) ----------
+node_modules/
+.pnpm-store/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+.vercel/
+*.tsbuildinfo
+
+# ---------- 로컬 데이터 ----------
+# 강의자료 PDF 원본과 분석 산출물은 S3에만 둔다.
+/data/
+/tmp/
+*.pdf
+!docs/**/*.pdf

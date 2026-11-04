@@ -1,0 +1,10 @@
+# 저장소에는 LF로 저장한다. 체크아웃 시 OS 기본값을 따른다.
+* text=auto eol=lf
+
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.pdf  binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
