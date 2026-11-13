@@ -1,0 +1,333 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ieobom PDF extraction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "document_id",
+    "source",
+    "coordinate_system",
+    "pages",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "document_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "filename",
+        "sha256"
+      ],
+      "properties": {
+        "filename": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "coordinate_system": {
+      "const": "normalized_top_left"
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/page"
+      },
+      "minItems": 1
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/warning"
+      }
+    }
+  },
+  "$defs": {
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "page_number",
+        "width_pt",
+        "height_pt",
+        "blocks"
+      ],
+      "properties": {
+        "page_number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "width_pt": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height_pt": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/block"
+          }
+        },
+        "analysis": {
+          "$ref": "#/$defs/analysis"
+        }
+      }
+    },
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "block_id",
+        "kind",
+        "docling_label",
+        "text",
+        "bbox"
+      ],
+      "properties": {
+        "block_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "text",
+            "title",
+            "list_item",
+            "table",
+            "figure",
+            "formula",
+            "code",
+            "caption",
+            "header",
+            "footer",
+            "other"
+          ]
+        },
+        "docling_label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bbox": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "minItems": 4,
+          "maxItems": 4,
+          "description": "Left, top, right, bottom in normalized coordinates."
+        },
+        "table": {
+          "$ref": "#/$defs/table"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "table"
+            ]
+          },
+          "then": {
+            "properties": {
+              "kind": {
+                "const": "table"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "row_count",
+        "column_count",
+        "cells"
+      ],
+      "properties": {
+        "row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cells": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/cell"
+          }
+        }
+      }
+    },
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "row_start",
+        "row_end",
+        "column_start",
+        "column_end",
+        "text",
+        "column_header",
+        "row_header"
+      ],
+      "properties": {
+        "row_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "row_end": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "column_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column_end": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "text": {
+          "type": "string"
+        },
+        "column_header": {
+          "type": "boolean"
+        },
+        "row_header": {
+          "type": "boolean"
+        }
+      }
+    },
+    "analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary",
+        "concepts",
+        "coverage",
+        "question_eligible",
+        "exclusion_reason"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "concepts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/concept"
+          }
+        },
+        "coverage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question_eligible": {
+          "type": "boolean"
+        },
+        "exclusion_reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "if": {
+        "properties": {
+          "question_eligible": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "exclusion_reason": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "exclusion_reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "concept": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "evidence_block_ids"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_block_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "warning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "page_number": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}
