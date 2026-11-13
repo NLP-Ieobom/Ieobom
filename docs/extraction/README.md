@@ -46,3 +46,13 @@ python -m backend.app.pipelines.pdf_extraction overlay lecture.pdf tmp/extractio
 - `warnings`를 먼저 보고, 이미지에서 본문·표·그림과 박스가 일치하는지 확인한다. 기하 정보가 맞지 않아 표시할 수 없는 PDF는 오류를 반환한다.
 
 워커에서 호출할 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...), document_id=...)`다. 함수가 반환한 딕셔너리를 저장하고 이후 분석 단계에서 페이지별 `analysis`를 추가한다. 강의계획서 예시는 수집·검수 단계에서 채울 데이터 형식을 보여 준다.
+
+### 좌표 표시 예시
+
+문서용 예시 슬라이드에서 Docling이 추출한 블록 7개를 모두 표시했다. 각 박스의 숫자는 해당 페이지의 `blocks` 배열에서 1부터 센 순서다.
+
+![예시 슬라이드에 표시된 전체 블록](images/all-blocks.png)
+
+같은 슬라이드에 `--block-id p0001-b0003`을 적용하면 언어 모델의 정의가 있는 3번 블록에 박스가 표시된다.
+
+![예시 슬라이드에 표시된 선택 블록](images/selected-block.png)
