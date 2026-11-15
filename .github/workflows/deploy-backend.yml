@@ -6,6 +6,8 @@ on:
     paths:
       - "backend/**"
       - "infra/docker-compose.yml"
+      - "infra/docling/**"
+      - "infra/db/**"
       - ".github/workflows/deploy-backend.yml"
 
 permissions:
@@ -47,7 +49,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "infra/docker-compose.yml"
+          source: "infra/docker-compose.yml,infra/docling/**,infra/db/**"
           target: "~/ieobom"
           strip_components: 1
 
