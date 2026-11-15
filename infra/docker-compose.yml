@@ -1,0 +1,9 @@
+services:
+  backend:
+    image: ${ECR_REGISTRY}/ieobom-backend:${IMAGE_TAG}
+    container_name: ieobom-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
