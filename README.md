@@ -49,6 +49,10 @@ docs/      설계 문서
 PostgreSQL의 잡 테이블로만 주고받는다. 구조와 파이프라인은 [docs/architecture.md](docs/architecture.md),
 기술 선택 이유와 아직 정하지 못한 것들은 [docs/decisions.md](docs/decisions.md)에 적었다.
 
+## 시연 데이터
+
+숭실대 AI소프트웨어학부 2026학년도 교육과정과 강의계획서의 주차별 주제를 로컬에서 불러올 수 있다. [시연 데이터 다운로드 및 사용 안내](docs/extraction/README.md#시연-데이터)
+
 ## 현재 상태
 
 디렉터리 골격과 설계 문서까지만 올라와 있다. 코드는 아직 없다.

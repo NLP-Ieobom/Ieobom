@@ -7,6 +7,16 @@
 | 강의자료 PDF | [pdf.schema.json](pdf.schema.json) | [pdf.example.json](pdf.example.json) |
 | 강의계획서 | [syllabus.schema.json](syllabus.schema.json) | [syllabus.example.json](syllabus.example.json) |
 
+## 시연 데이터
+
+[공개 시연 데이터 ZIP](demo/ieobom-ssu-corpus.zip)을 내려받아 압축을 푼다. 2026학년도 입학생 기준 교육과정 52과목과 2026학년도 개설 정보, 과목당 대표 계획서에서 정리한 49과목의 주차별 주제가 들어 있다. U-SAINT 로그인 없이 사용할 수 있다.
+
+1. `manifest.json`의 `course_index`에서 과목 인덱스 경로를 확인한다.
+2. 인덱스에서 `course_id`로 과목을 찾고, `syllabus.path`가 있으면 ZIP 루트 기준으로 해당 JSON을 읽는다.
+3. 해당 JSON의 `weekly_topics`에서 주차별 주제를 읽는다. `syllabus`가 비어 있는 과목은 `syllabus_status`를 확인한다.
+
+공개용 주차별 주제 JSON은 과목 탐색과 검색 시연용이다. 원본 PDF와 페이지 근거가 필요한 시연은 팀 자료를 사용한다. PDF에서 `block_id`로 위치를 찾는 방법은 아래 좌표 표시 예시를 참고한다.
+
 ## PDF
 
 - `document_id`는 백엔드 문서 식별자다. `source.sha256`에는 원본 파일 바이트의 SHA-256을 기록한다. 예시의 해시와 파일명은 가상 값이다.
