@@ -3,6 +3,9 @@ services:
     image: ${ECR_REGISTRY}/ieobom-backend:${IMAGE_TAG}
     container_name: ieobom-backend
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     env_file:
       - .env
     ports:
@@ -28,6 +31,8 @@ services:
       - maintenance_work_mem=64MB
     mem_limit: 1g
     shm_size: 256m
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro

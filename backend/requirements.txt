@@ -4,3 +4,6 @@ sqlalchemy
 psycopg[binary]
 alembic
 boto3
+bcrypt
+pyjwt
+email-validator

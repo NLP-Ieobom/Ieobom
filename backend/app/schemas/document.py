@@ -1,9 +1,11 @@
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel
 
 
 class UploadUrlRequest(BaseModel):
+    course_id: uuid.UUID
     filename: str
     content_type: str
     size_bytes: int
@@ -31,3 +33,14 @@ class StatusResponse(BaseModel):
 class FileUrlResponse(BaseModel):
     file_url: str
     expires_in: int
+
+
+class DocumentSummary(BaseModel):
+    document_id: uuid.UUID
+    filename: str
+    status: str
+    created_at: datetime
+
+
+class DocumentListResponse(BaseModel):
+    documents: list[DocumentSummary]

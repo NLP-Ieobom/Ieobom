@@ -4,12 +4,17 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.integrations import s3
 from app.models.analysis_job import AnalysisJob
+from app.models.course import Course
 from app.models.document import Document, DocumentStatus
+from app.models.user import User
 from app.schemas.document import (
     CompleteResponse,
+    DocumentListResponse,
+    DocumentSummary,
     FileUrlResponse,
     StatusResponse,
     UploadUrlRequest,
@@ -19,14 +24,55 @@ from app.schemas.document import (
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
+def _get_owned_document(db: Session, document_id: uuid.UUID, user: User) -> Document:
+    document = db.get(Document, document_id)
+    # 다른 사용자의 문서는 403이 아니라 404로 응답한다. 존재 여부를 노출하지 않는다.
+    if document is None or document.user_id != user.id:
+        raise HTTPException(status_code=404, detail="document not found")
+    return document
+
+
+@router.get("", response_model=DocumentListResponse)
+def list_documents(
+    course_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> DocumentListResponse:
+    documents = (
+        db.query(Document)
+        .filter(Document.course_id == course_id, Document.user_id == current_user.id)
+        .order_by(Document.created_at.desc())
+        .all()
+    )
+    return DocumentListResponse(
+        documents=[
+            DocumentSummary(
+                document_id=document.id,
+                filename=document.original_filename,
+                status=document.status,
+                created_at=document.created_at,
+            )
+            for document in documents
+        ]
+    )
+
+
 @router.post("/upload-url", response_model=UploadUrlResponse)
-def create_upload_url(payload: UploadUrlRequest, db: Session = Depends(get_db)) -> UploadUrlResponse:
+def create_upload_url(
+    payload: UploadUrlRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> UploadUrlResponse:
     if payload.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="PDF만 업로드할 수 있다")
     if payload.size_bytes > int(os.environ["MAX_UPLOAD_SIZE"]):
         raise HTTPException(status_code=400, detail="파일이 허용 크기를 넘었다")
+    if db.get(Course, payload.course_id) is None:
+        raise HTTPException(status_code=404, detail="course not found")
 
     document = Document(
+        user_id=current_user.id,
+        course_id=payload.course_id,
         original_filename=payload.filename,
         content_type=payload.content_type,
         size_bytes=payload.size_bytes,
@@ -48,13 +94,13 @@ def create_upload_url(payload: UploadUrlRequest, db: Session = Depends(get_db)) 
     )
 
 
-# 인증이 아직 없어서 document_id만 알면 누구나 접근할 수 있다.
-# 인증 붙으면 소유자 확인을 추가해야 한다.
 @router.post("/{document_id}/complete", response_model=CompleteResponse)
-def complete_upload(document_id: uuid.UUID, db: Session = Depends(get_db)) -> CompleteResponse:
-    document = db.get(Document, document_id)
-    if document is None:
-        raise HTTPException(status_code=404, detail="document not found")
+def complete_upload(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> CompleteResponse:
+    document = _get_owned_document(db, document_id, current_user)
     if document.status != DocumentStatus.PENDING_UPLOAD.value:
         raise HTTPException(status_code=409, detail="already completed")
 
@@ -74,10 +120,12 @@ def complete_upload(document_id: uuid.UUID, db: Session = Depends(get_db)) -> Co
 
 
 @router.get("/{document_id}/status", response_model=StatusResponse)
-def get_status(document_id: uuid.UUID, db: Session = Depends(get_db)) -> StatusResponse:
-    document = db.get(Document, document_id)
-    if document is None:
-        raise HTTPException(status_code=404, detail="document not found")
+def get_status(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> StatusResponse:
+    document = _get_owned_document(db, document_id, current_user)
 
     job = (
         db.query(AnalysisJob)
@@ -93,10 +141,12 @@ def get_status(document_id: uuid.UUID, db: Session = Depends(get_db)) -> StatusR
 
 
 @router.get("/{document_id}/file-url", response_model=FileUrlResponse)
-def get_file_url(document_id: uuid.UUID, db: Session = Depends(get_db)) -> FileUrlResponse:
-    document = db.get(Document, document_id)
-    if document is None:
-        raise HTTPException(status_code=404, detail="document not found")
+def get_file_url(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> FileUrlResponse:
+    document = _get_owned_document(db, document_id, current_user)
     if document.status != DocumentStatus.UPLOADED.value:
         raise HTTPException(status_code=409, detail="document not uploaded yet")
 
