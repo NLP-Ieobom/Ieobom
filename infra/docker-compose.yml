@@ -3,7 +3,68 @@ services:
     image: ${ECR_REGISTRY}/ieobom-backend:${IMAGE_TAG}
     container_name: ieobom-backend
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     env_file:
       - .env
     ports:
       - "127.0.0.1:8000:8000"
+
+  db:
+    image: pgvector/pgvector:0.8.7-pg17-bookworm
+    container_name: ieobom-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - max_connections=30
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=64MB
+    mem_limit: 1g
+    shm_size: 256m
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  # 기본 셋업만. 페이지 범위·OCR 같은 분석 파라미터 튜닝은 범위 밖.
+  docling:
+    image: ieobom-docling-check:local
+    build:
+      context: ./docling
+      dockerfile: Dockerfile.docling
+    profiles: ["tools"]
+    init: true
+    cpus: "1.0"
+    mem_limit: 4g
+    memswap_limit: 4g
+    environment:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      EASYOCR_MODULE_PATH: /root/.cache/easyocr
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./docling/input:/work/input:ro
+      - ./docling/output:/work/output
+      - docling_cache:/root/.cache
+
+volumes:
+  postgres_data:
+  docling_cache:

@@ -1,0 +1,7 @@
+# Linux x86_64 / Python 3.12 조합으로 확인함.
+# uv --torch-backend=cpu 옵션으로 설치한다. 빼먹으면 안 됨.
+docling==2.150.0
+torch==2.15.0
+torchvision==0.29.2
+# docling_check.py를 --ocr로 돌릴 때만 쓴다.
+easyocr==1.7.2
