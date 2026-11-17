@@ -43,6 +43,23 @@ services:
       retries: 12
       start_period: 15s
 
+  worker:
+    image: ${ECR_REGISTRY}/ieobom-backend:${IMAGE_TAG}
+    container_name: ieobom-worker
+    restart: unless-stopped
+    command: ["python", "-m", "app.worker.run"]
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    # docker.sock을 공유해서 host에 떠 있는 docling 체크 이미지를 그대로 실행한다.
+    # bind mount 경로는 host 기준이라 워커 자신도 같은 호스트 디렉터리를 입출력 경로로 마운트해 둔다.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docling/input:/work/input
+      - ./docling/output:/work/output
+
   # 기본 셋업만. 페이지 범위·OCR 같은 분석 파라미터 튜닝은 범위 밖.
   docling:
     image: ieobom-docling-check:local
