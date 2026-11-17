@@ -31,6 +31,10 @@ def create_presigned_get_url(key: str) -> str:
     )
 
 
+def download_file(key: str, dest_path) -> None:
+    _client.download_file(_bucket(), key, str(dest_path))
+
+
 def head_object(key: str):
     """객체가 없으면 None. 그 외 에러는 그대로 올린다."""
     try:

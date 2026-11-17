@@ -1,0 +1,90 @@
+import os
+import subprocess
+import time
+from pathlib import Path
+
+from sqlalchemy import text
+
+from app.db.session import SessionLocal
+from app.integrations import s3
+
+WORKER_ID = os.environ.get("WORKER_ID", "worker-1")
+POLL_INTERVAL_SEC = int(os.environ.get("WORKER_POLL_INTERVAL_SEC", "3"))
+# docker.sock으로 host의 docling 이미지를 그대로 실행하기 때문에, -v 경로는 워커 컨테이너가 아니라
+# host 기준이어야 한다. 워커 자신도 같은 host 디렉터리를 /work/input, /work/output에 마운트해 둔다.
+DOCLING_HOST_DIR = os.environ["DOCLING_HOST_DIR"]
+INPUT_DIR = Path("/work/input")
+
+CLAIM_SQL = text("""
+    UPDATE analysis_job
+    SET status = 'running', locked_by = :worker_id, locked_at = now(), attempt = attempt + 1
+    WHERE id = (
+        SELECT id FROM analysis_job
+        WHERE status = 'pending' AND scheduled_at <= now()
+        ORDER BY scheduled_at, id
+        FOR UPDATE SKIP LOCKED
+        LIMIT 1
+    )
+    RETURNING id, document_id
+""")
+
+
+def claim_job(db):
+    row = db.execute(CLAIM_SQL, {"worker_id": WORKER_ID}).first()
+    db.commit()
+    return row
+
+
+def finish_job(db, job_id, status: str) -> None:
+    db.execute(text("UPDATE analysis_job SET status = :status WHERE id = :id"), {"status": status, "id": job_id})
+    db.commit()
+
+
+def run_docling(pdf_path: Path) -> bool:
+    # 세부 파이프라인(페이지 범위, OCR 등)은 범위 밖. 일단 전체 페이지를 기본값으로 돌린다.
+    cmd = [
+        "docker", "run", "--rm",
+        "--cpus", "1.0", "--memory", "4g", "--memory-swap", "4g",
+        "-e", "OMP_NUM_THREADS=1", "-e", "MKL_NUM_THREADS=1", "-e", "OPENBLAS_NUM_THREADS=1",
+        "-v", f"{DOCLING_HOST_DIR}/input:/work/input:ro",
+        "-v", f"{DOCLING_HOST_DIR}/output:/work/output",
+        "-v", "ieobom_docling_cache:/root/.cache",
+        "ieobom-docling-check:local",
+        f"/work/input/{pdf_path.name}", "--all-pages",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+    print(result.stdout, flush=True)
+    if result.returncode != 0:
+        print(result.stderr, flush=True)
+    return result.returncode == 0
+
+
+def process(db, job_id, document_id) -> None:
+    document = db.execute(text("SELECT s3_key FROM document WHERE id = :id"), {"id": document_id}).first()
+    pdf_path = INPUT_DIR / f"{document_id}.pdf"
+    s3.download_file(document.s3_key, pdf_path)
+    ok = run_docling(pdf_path)
+    finish_job(db, job_id, "succeeded" if ok else "failed")
+
+
+def main() -> None:
+    print(f"worker {WORKER_ID} started", flush=True)
+    while True:
+        db = SessionLocal()
+        try:
+            claimed = claim_job(db)
+            if claimed is None:
+                time.sleep(POLL_INTERVAL_SEC)
+                continue
+            print(f"claimed job {claimed.id} for document {claimed.document_id}", flush=True)
+            try:
+                process(db, claimed.id, claimed.document_id)
+            except Exception as error:
+                print(f"job {claimed.id} failed: {error}", flush=True)
+                finish_job(db, claimed.id, "failed")
+        finally:
+            db.close()
+
+
+if __name__ == "__main__":
+    main()
