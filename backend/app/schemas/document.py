@@ -3,6 +3,8 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.schemas.progress import DocumentReadingProgress
+
 
 class UploadUrlRequest(BaseModel):
     course_id: uuid.UUID
@@ -28,6 +30,10 @@ class StatusResponse(BaseModel):
     document_id: uuid.UUID
     status: str
     job_status: str | None
+    stage: str | None
+    completed_pages: int | None
+    total_pages: int | None
+    stage_progress_percent: int | None
 
 
 class FileUrlResponse(BaseModel):
@@ -40,6 +46,7 @@ class DocumentSummary(BaseModel):
     filename: str
     status: str
     created_at: datetime
+    reading_progress: DocumentReadingProgress
 
 
 class DocumentListResponse(BaseModel):

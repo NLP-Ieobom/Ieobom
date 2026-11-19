@@ -121,7 +121,7 @@ LLM 출력이 스키마에 안 맞는 경우)는 `scheduled_at`을 뒤로 밀어
 
 구현하면서 바뀔 테니 전체 스키마 대신 덩어리와 관계만 적는다.
 
-커리큘럼 선택과 수강 지도는 프론트 화면 작업 전까지 보류한다. [구현 계획](curriculum-plan.md)을 참고한다.
+커리큘럼 목록·지도, 수강 상태 변경, PDF 열람 진도를 구현했다. 개인 커리큘럼 선택을 계정에 저장하는 기능은 아직 없다. [구현 범위와 남은 계획](curriculum-plan.md)을 참고한다.
 
 **교육과정 쪽(공용)** — `curriculum`, `course`, `course_relation`, `course_concept`,
 `syllabus`, `course_alias`. 관리자가 등록하고 모든 학생이 공유한다.
@@ -168,7 +168,7 @@ GET  /pages/{id}/related-courses  후속 과목 연결과 근거
 GET  /pages/{id}/trends           연결된 연구 동향
 POST /pages/{id}/ask              개별 질문 (Gemini 실시간)
 
-GET  /courses/{id}/map            과목 지도
+GET  /curricula/{id}/map          커리큘럼 지도와 내 수강 상태
 ```
 
 조회 경로에서는 LLM을 부르지 않는다. 실시간 호출은 `/ask` 계열뿐이다.
