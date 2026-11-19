@@ -12,3 +12,7 @@ class CourseSummary(BaseModel):
 
 class CourseListResponse(BaseModel):
     courses: list[CourseSummary]
+
+
+class MyCourseListResponse(BaseModel):
+    courses: list[CourseSummary]
