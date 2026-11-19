@@ -1,0 +1,142 @@
+{
+  "schema_version": "1.0",
+  "syllabus_id": "demo-db-fall-01",
+  "verification_status": "needs_review",
+  "sources": [
+    {
+      "source_id": "syllabus",
+      "role": "syllabus",
+      "title": "데이터베이스 강의계획서 (가상 예시)",
+      "kind": "pdf",
+      "document_id": "demo-syllabus-db"
+    },
+    {
+      "source_id": "curriculum",
+      "role": "curriculum",
+      "title": "컴퓨터공학 교육과정 (가상 예시)",
+      "kind": "web",
+      "url": "https://example.org/curriculum"
+    }
+  ],
+  "course": {
+    "course_id": "demo-db",
+    "course_code": "DEMO201",
+    "name": "데이터베이스",
+    "curriculum_year": 2026,
+    "aliases": [
+      {
+        "name": "데이터베이스 개론",
+        "course_code": "DEMO200",
+        "evidence": [
+          {
+            "source_id": "curriculum",
+            "section": "이전 교육과정과 과목명 대응"
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "source_id": "syllabus",
+        "page_number": 1,
+        "section": "교과목 정보"
+      },
+      {
+        "source_id": "curriculum",
+        "section": "2026년 교육과정"
+      }
+    ]
+  },
+  "term": {
+    "academic_year": 2026,
+    "semester": "fall",
+    "section": "01"
+  },
+  "overview": {
+    "text": "관계형 데이터 모델과 SQL, 데이터베이스 설계를 학습한다.",
+    "evidence": [
+      {
+        "source_id": "syllabus",
+        "page_number": 1,
+        "section": "강의 개요"
+      }
+    ]
+  },
+  "learning_objectives": [
+    {
+      "text": "함수 종속성을 찾아 정규화에 적용할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus",
+          "page_number": 1,
+          "section": "학습 목표"
+        }
+      ]
+    }
+  ],
+  "weekly_topics": [
+    {
+      "week": 7,
+      "topics": [
+        {
+          "text": "함수 종속성과 정규화",
+          "evidence": [
+            {
+              "source_id": "syllabus",
+              "page_number": 2,
+              "section": "주차별 계획",
+              "quote": "7주차: 함수 종속성과 정규화"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "name": "함수 종속성",
+      "weeks": [
+        7
+      ],
+      "evidence": [
+        {
+          "source_id": "syllabus",
+          "page_number": 2,
+          "section": "주차별 계획"
+        }
+      ]
+    }
+  ],
+  "official_prerequisites": [
+    {
+      "course_id": "demo-programming",
+      "course_name": "프로그래밍 기초",
+      "evidence": [
+        {
+          "source_id": "syllabus",
+          "page_number": 1,
+          "section": "선수과목",
+          "quote": "선수과목: 프로그래밍 기초"
+        }
+      ]
+    }
+  ],
+  "suggested_connections": [
+    {
+      "course_id": "demo-db-advanced",
+      "course_name": "데이터베이스응용",
+      "reason": "테이블 분해를 학습한 뒤 설계 선택에 따른 조회 비용을 비교할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus",
+          "page_number": 2,
+          "section": "주차별 계획"
+        },
+        {
+          "source_id": "curriculum",
+          "section": "데이터베이스응용"
+        }
+      ]
+    }
+  ]
+}
