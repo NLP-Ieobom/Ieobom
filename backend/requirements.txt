@@ -7,3 +7,4 @@ boto3
 bcrypt
 pyjwt
 email-validator
+pgvector

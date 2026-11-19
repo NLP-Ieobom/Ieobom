@@ -7,10 +7,14 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.integrations import s3
+from app.integrations.gemini import Gemini
+from app.integrations.learning_http import ProviderError
 from app.models.analysis_job import AnalysisJob
 from app.models.course import Course
 from app.models.document import Document, DocumentStatus
+from app.models.learning import DocumentLearning
 from app.models.user import User
+from app.pipelines.learning import answer_follow_up
 from app.schemas.document import (
     CompleteResponse,
     DocumentListResponse,
@@ -20,12 +24,15 @@ from app.schemas.document import (
     UploadUrlRequest,
     UploadUrlResponse,
 )
+from app.schemas.learning import AskRequest, FollowUpAnswer, PageLearning
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
-def _get_owned_document(db: Session, document_id: uuid.UUID, user: User) -> Document:
-    document = db.get(Document, document_id)
+def _get_owned_document(
+    db: Session, document_id: uuid.UUID, user: User, *, lock: bool = False,
+) -> Document:
+    document = db.get(Document, document_id, with_for_update=lock)
     # 다른 사용자의 문서는 403이 아니라 404로 응답한다. 존재 여부를 노출하지 않는다.
     if document is None or document.user_id != user.id:
         raise HTTPException(status_code=404, detail="document not found")
@@ -100,7 +107,7 @@ def complete_upload(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> CompleteResponse:
-    document = _get_owned_document(db, document_id, current_user)
+    document = _get_owned_document(db, document_id, current_user, lock=True)
     if document.status != DocumentStatus.PENDING_UPLOAD.value:
         raise HTTPException(status_code=409, detail="already completed")
 
@@ -153,3 +160,47 @@ def get_file_url(
     expires_in = int(os.environ["S3_PRESIGNED_GET_EXPIRE"])
     file_url = s3.create_presigned_get_url(document.s3_key)
     return FileUrlResponse(file_url=file_url, expires_in=expires_in)
+
+
+@router.get("/{document_id}/pages/{page_number}/learning", response_model=PageLearning)
+def get_page_learning(
+    document_id: uuid.UUID,
+    page_number: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> PageLearning:
+    _get_owned_document(db, document_id, current_user)
+    learning = db.get(DocumentLearning, document_id)
+    if learning is None or learning.result is None:
+        raise HTTPException(status_code=404, detail="learning content not available")
+    page = learning.result["pages"].get(str(page_number))
+    if page is None:
+        raise HTTPException(status_code=404, detail="page not found")
+    return PageLearning.model_validate(page)
+
+
+@router.post("/{document_id}/pages/{page_number}/ask", response_model=FollowUpAnswer)
+def ask_about_page(
+    document_id: uuid.UUID,
+    page_number: int,
+    payload: AskRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> FollowUpAnswer:
+    _get_owned_document(db, document_id, current_user)
+    learning = db.get(DocumentLearning, document_id)
+    if learning is None or learning.result is None:
+        raise HTTPException(status_code=404, detail="learning content not available")
+    result = learning.result["pages"].get(str(page_number))
+    if result is None:
+        raise HTTPException(status_code=404, detail="page not found")
+    if not result["analysis"]["question_eligible"]:
+        raise HTTPException(status_code=409, detail="page has no eligible lecture content")
+    page = next(page for page in learning.extraction["pages"] if page["page_number"] == page_number)
+    db.rollback()  # Release the read transaction before the external call.
+    if not os.environ.get("GEMINI_API_KEY", "").strip():
+        raise HTTPException(status_code=503, detail="follow-up questions are unavailable")
+    try:
+        return answer_follow_up(Gemini(), page, payload.question)
+    except ProviderError:
+        raise HTTPException(status_code=502, detail="could not generate a grounded answer") from None
