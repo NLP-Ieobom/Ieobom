@@ -7,7 +7,16 @@ from sqlalchemy import pool
 from alembic import context
 
 from app.db.base import Base
-from app.models import analysis_job, course, document, refresh_token, user, user_course  # noqa: F401  # 모델을 Base.metadata에 등록하려고 import
+from app.models import (  # noqa: F401  # 모델을 Base.metadata에 등록하려고 import
+    analysis_job,
+    course,
+    document,
+    document_page,
+    refresh_token,
+    user,
+    user_course,
+    user_note,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
