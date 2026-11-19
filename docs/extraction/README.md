@@ -1,6 +1,6 @@
 # PDF·강의계획서 데이터 형식
 
-이어봄에서 문서 추출기, 질문 생성기, PDF 뷰어 사이에 교환하는 v1.0 초안이다. 스키마는 JSON Schema Draft 2020-12이고, 예시는 팀 내 통합 테스트용 가상 자료다. 저장소의 [분석 파이프라인](../architecture.md#분석-파이프라인)을 따른다.
+이어봄에서 문서 추출기, 질문 생성기, PDF 뷰어 사이에 교환하는 v1.0 형식이다. 스키마는 JSON Schema Draft 2020-12이고, 예시는 팀 내 통합 테스트용 가상 자료다. 저장소의 [분석 파이프라인](../architecture.md#분석-파이프라인)을 따른다.
 
 | 형식 | 스키마 | 예시 |
 | --- | --- | --- |
@@ -50,12 +50,32 @@ python -m backend.app.pipelines.pdf_extraction overlay lecture.pdf tmp/extractio
 
 - `extract`는 Docling에서 얻은 페이지 크기, 읽기 순서의 블록, 표 셀, 좌상단 기준 좌표를 JSON으로 저장한다. `--document-id`로 DB의 문서 ID를 전달할 수 있다. 로컬 실행의 기본값은 파일의 SHA-256이다.
 - 원본의 한 페이지만 검증하려면 `extract`에 `--page 5`를 붙인다. 결과의 `page_number`와 `block_id`에는 원본의 5쪽 번호가 유지된다. Docling 기본 PDF 백엔드가 로드되지 않는 환경은 `--pdf-backend pdfium`으로 Docling의 표준 레이아웃 분석을 실행할 수 있다. 표 셀 분석이 필요 없는 페이지에는 `--no-table-structure`를 추가한다.
-- 텍스트 레이어가 없는 스캔은 `extract`에 `--ocr`를 추가해 처리할 수 있다. 기본 OCR 설정으로 처리하며, 한국어 스캔은 팀 자료에 맞춰 OCR 엔진과 언어 설정을 검증해야 한다.
+- 텍스트 레이어가 없는 스캔은 `extract`에 `--ocr`를 추가한다. EasyOCR의 한국어·영어 모델을 CPU에서 사용한다. 스캔 여부를 자동 판별해 재실행하지는 않는다.
 - `overlay`는 입력 PDF의 SHA-256과 페이지 크기를 확인한 다음 `page-0001.png` 같은 검토 이미지를 저장한다. 박스의 숫자는 해당 페이지 JSON의 `blocks` 배열에서 1부터 센 순서다. `--page`를 반복하면 선택한 페이지만 출력한다. `--dpi`의 기본값은 144다.
 - 질문이 가리키는 위치를 확인하려면 추출 JSON의 실제 `block_id`를 `--block-id`에 넘긴다. 여러 블록을 보려면 옵션을 반복한다. 해당 블록이 있는 페이지에 선택한 박스만 그린다. `--page`도 지정하면 모든 블록이 선택한 페이지 안에 있어야 한다. 두 옵션을 생략하면 전체 페이지의 박스를 그린다.
 - `warnings`를 먼저 보고, 이미지에서 본문·표·그림과 박스가 일치하는지 확인한다. 기하 정보가 맞지 않아 표시할 수 없는 PDF는 오류를 반환한다.
 
-워커에서 호출할 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...), document_id=...)`다. 함수가 반환한 딕셔너리를 저장하고 이후 분석 단계에서 페이지별 `analysis`를 추가한다. 강의계획서 예시는 수집·검수 단계에서 채울 데이터 형식을 보여 준다.
+Python 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...), document_id=...)`다. 워커는 같은 코드의 CLI를 별도 Docling 컨테이너에서 실행하고 `/work/output/{job_id}.json`에 결과를 남긴다. DB 저장은 아직 연결되지 않았다. 현재 테이블과 저장 제안은 [DB 저장 검토](storage.md)에 정리했다. 강의계획서 예시는 수집·검수 단계에서 채울 데이터 형식을 보여 준다.
+
+### Docling 실행 설정
+
+`pdf_extraction.py`에서 Docling 2.150.0의 `PdfPipelineOptions`를 설정한다. CPU 1스레드를 사용하고 레이아웃·표·OCR 배치 크기, 단계 사이 큐, PDF 파서의 선행 페이지 버퍼를 각각 1로 둔다. 표는 `ACCURATE` 모드와 셀 매칭을 사용한다. OCR은 기본으로 끈다.
+
+현재 계약에는 그림의 위치만 필요하므로 페이지·그림 이미지를 결과에 보관하지 않는다. 그림 설명·분류, 코드·수식 보강도 끈다. 그림과 수식 블록의 종류·좌표는 그대로 추출한다. 원문 표시는 S3의 PDF, 좌표 검토 이미지는 `overlay`를 사용한다.
+
+Docling 변환 제한은 PDF당 600초, 워커의 컨테이너 실행 대기는 900초다. 컨테이너는 CPU 1개와 메모리 4GB로 제한한다. 이 제한 안에서 처리되는 PDF 크기와 한국어 OCR 품질은 실제 강의자료로 확인해야 한다. 옵션의 의미는 [Docling 공식 설정 안내](https://docling-project.github.io/docling/usage/advanced_options/)를 참고한다.
+
+Docling 이미지는 `BACKEND_IMAGE`의 추출 코드를 복사한다. 배포에서는 Compose가 같은 배포 태그의 백엔드 이미지를 넘기며, 백엔드 이미지를 받은 뒤 Docling 이미지를 빌드한다. 로컬에서 Docker로 확인할 때는 저장소 루트에서 다음 순서로 실행한다.
+
+```sh
+docker build -t ieobom-backend:local backend
+docker build -t ieobom-docling:local -f infra/docling/Dockerfile.docling infra/docling
+docker run --rm --cpus 1 --memory 4g --memory-swap 4g -v "./infra/docling/input:/work/input:ro" -v "./infra/docling/output:/work/output" -v ieobom_docling_cache:/root/.cache ieobom-docling:local extract /work/input/lecture.pdf --output /work/output/lecture.json --document-id local-check
+```
+
+앞의 명령은 `infra/docling/input/lecture.pdf`를 읽는다. 실제 워커는 전체 PDF를 OCR 없이 처리하며 DB의 문서 ID를 전달한다. CLI는 부분 변환 결과를 경고와 함께 남길 수 있지만, 워커는 `partial_conversion` 경고가 있으면 실패로 처리한다. 페이지 누락은 추출기에서 오류로 처리한다.
+
+기존 `docling_check.py`는 원시 Docling JSON과 페이지 PNG를 보는 점검용으로 남겨 둔다. 필요할 때 `docker run`에 `--entrypoint python`을 넣고 이미지 뒤에 `/app/docling_check.py`와 점검 인자를 전달한다. 서비스 추출 설정과 출력 형식은 위의 공통 추출기를 기준으로 한다.
 
 ### 좌표 표시 예시
 

@@ -173,14 +173,36 @@ def extract_pdf(
     if pdf_backend not in {"default", "pdfium"}:
         raise ValueError(f"Unknown Docling PDF backend: {pdf_backend}.")
 
+    from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+    from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
     from docling.datamodel.base_models import ConversionStatus, InputFormat
-    from docling.datamodel.pipeline_options import PdfPipelineOptions
+    from docling.datamodel.pipeline_options import EasyOcrOptions, PdfPipelineOptions, TableFormerMode
     from docling.document_converter import DocumentConverter, PdfFormatOption
 
     with pdf_path.open("rb") as source:
         digest = hashlib.file_digest(source, "sha256").hexdigest()
 
-    options = PdfPipelineOptions(do_ocr=ocr, do_table_structure=table_structure)
+    # API와 같은 호스트에서 돌아가므로 추론과 페이지 버퍼를 작게 유지한다.
+    options = PdfPipelineOptions(
+        do_ocr=ocr,
+        do_table_structure=table_structure,
+        accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU, num_threads=1),
+        layout_batch_size=1,
+        table_batch_size=1,
+        ocr_batch_size=1,
+        queue_max_size=1,
+        document_timeout=600,
+        generate_page_images=False,
+        generate_picture_images=False,
+        do_picture_classification=False,
+        do_picture_description=False,
+        do_code_enrichment=False,
+        do_formula_enrichment=False,
+    )
+    options.table_structure_options.mode = TableFormerMode.ACCURATE
+    options.table_structure_options.do_cell_matching = True
+    if ocr:
+        options.ocr_options = EasyOcrOptions(lang=["ko", "en"], use_gpu=False)
     if pdf_backend == "pdfium":
         from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 
@@ -188,7 +210,12 @@ def extract_pdf(
             pipeline_options=options, backend=PyPdfiumDocumentBackend
         )
     else:
-        format_option = PdfFormatOption(pipeline_options=options)
+        format_option = PdfFormatOption(
+            pipeline_options=options,
+            backend_options=ThreadedDoclingParseBackendOptions(
+                parser_threads=1, max_concurrent_results=1,
+            ),
+        )
 
     converter = DocumentConverter(
         allowed_formats=[InputFormat.PDF],

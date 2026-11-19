@@ -69,5 +69,6 @@ jobs:
             export ECR_REGISTRY
             export IMAGE_TAG
             docker compose pull
+            docker compose --profile tools build docling
             docker compose up -d
             docker image prune -f
