@@ -12,6 +12,7 @@ from app.models import (  # noqa: F401  # 모델을 Base.metadata에 등록하�
     course,
     document,
     document_page,
+    question,
     refresh_token,
     saved_question,
     user,
