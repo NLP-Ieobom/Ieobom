@@ -54,6 +54,7 @@ def list_saved_questions(
                 learning_order=question.learning_order,
                 first_activity=question.first_activity,
                 created_at=question.created_at,
+                is_saved=True,
             )
             for question, document_id, page_number in rows
         ]
