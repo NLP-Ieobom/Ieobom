@@ -29,7 +29,8 @@ class Gemini:
                 "responseMimeType": "application/json",
                 "responseJsonSchema": schema.model_json_schema(),
                 "temperature": 0.2,
-                "maxOutputTokens": 8192,
+                # 3쪽 묶음의 질문별 단락형 해설과 사고 토큰이 함께 들어가도록 여유를 둔다
+                "maxOutputTokens": 32768,
             },
         }
         response = request_json(

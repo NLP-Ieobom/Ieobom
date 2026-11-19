@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import DateTime, ForeignKey, String, Uuid
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -28,6 +28,9 @@ class CourseLearningProfile(Base):
     )
     corpus_id: Mapped[str] = mapped_column(String(255), unique=True)
     topics: Mapped[list[str]] = mapped_column(JSONB)
+    # 교육과정에서 가장 이른 학년·학기를 학년 * 10 + 학기로 저장한다. 3학년 2학기는 32다.
+    # 이전에 들은 과목과 이후에 들을 과목을 나눠 검색할 때 쓴다. 편성 정보가 없으면 비어 있다.
+    semester_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
     embedding_model: Mapped[str] = mapped_column(String(100))
     embedding: Mapped[list[float]] = mapped_column(Vector(EMBEDDING_DIM))
 

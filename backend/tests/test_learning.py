@@ -9,20 +9,37 @@ from app.integrations.learning_http import ProviderError
 from app.pipelines.docling_output import _pages
 from app.models.learning import CourseLearningProfile, CourseResearchCache
 from app.pipelines.learning import answer_follow_up, generate_learning
-from app.schemas.learning import FollowUpAnswer, PageDrafts, PageSelections, PaperSummaries, ResearchQuery
+from app.schemas.learning import (
+    FollowUpAnswer, PageDrafts, PageSelections, PaperSummaries, ResearchDirections, ResearchQueries,
+)
 
 
 def make_question(text, evidence="p2-b1"):
     return {
         "type": "challenge",
         "question": text,
-        "explanation": "함수 종속성과 질의 비용을 구분합니다.",
+        "explanation": {
+            "headline": "분해는 갱신 이상을 줄이지만 조인 비용이 생깁니다.",
+            "body": "함수 종속성과 질의 비용을 구분합니다.",
+            "flow": ["함수 종속성", "테이블 분해", "조인 비용"],
+        },
         "evidence_block_ids": [evidence],
         "why_recommended": "분해의 효과를 비교해 볼 수 있습니다.",
         "prerequisites": ["함수 종속성"],
         "learning_steps": ["분해 전후 질의를 비교합니다."],
         "first_activity": "두 스키마를 종이에 그립니다.",
     }
+
+
+def make_selection(courses=(), papers=()):
+    # 2쪽의 두 질문 중 첫 질문에만 과목과 논문을 고른 응답
+    return PageSelections.model_validate({"pages": [{"page_number": 2, "questions": [
+        {"question_number": 1, "related_courses": [
+            {"course_id": course_id, "reason": "조인 비용을 더 살펴볼 수 있습니다.", "next_topic": "질의 최적화"}
+            for course_id in courses
+        ], "paper_ids": list(papers)},
+        {"question_number": 2, "related_courses": [], "paper_ids": []},
+    ]}]})
 
 
 class LearningContractTest(TestCase):
@@ -78,56 +95,87 @@ class LearningContractTest(TestCase):
             [make_question("조인 비용은?"), make_question("조인 비용은!")],
         ):
             with self.subTest(questions=questions):
+                self.gemini.generate.reset_mock()
                 self.set_questions(questions)
-                with self.assertRaises(ProviderError):
+                with self.assertRaises(ProviderError), redirect_stdout(StringIO()):
                     generate_learning(self.db, self.gemini, self.course, self.extraction)
+                self.assertEqual(self.gemini.generate.call_count, 3)
 
-    def test_course_recommendation_uses_indexed_syllabus_and_candidate_ids(self):
+    def test_regenerates_only_the_batch_with_invalid_output(self):
+        self.set_questions([make_question("조인 비용은?")])
+        single = self.gemini.generate.return_value
+        self.set_questions([make_question("조인 비용은?"), make_question("어떤 이상이 줄어드나요?")])
+        self.gemini.generate.side_effect = [single, self.gemini.generate.return_value]
+        with redirect_stdout(StringIO()):
+            page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
+        self.assertEqual(len(page["questions"]), 2)
+        self.assertEqual(self.gemini.generate.call_count, 2)
+
+    def test_course_recommendation_splits_previous_and_next_semesters(self):
         topics = ["함수 종속성", "관계형 모델"]
-        self.db.get.return_value = SimpleNamespace(topics=topics)
+        # 이 과목은 3학년 2학기(32)로 인덱싱되어 있다
+        self.db.get.return_value = SimpleNamespace(topics=topics, semester_order=32)
         self.db.scalar.return_value = "advanced-db"
-        self.db.execute.return_value = [SimpleNamespace(
-            id="advanced-db", name="데이터베이스응용", topics=["질의 최적화"],
-        )]
+        previous = SimpleNamespace(id="intro-db", name="데이터베이스", topics=["관계형 모델"])
+        later = SimpleNamespace(id="big-data", name="빅데이터컴퓨팅", topics=["분산 질의 처리"])
         vector = [1.0] + [0.0] * 1535
         self.gemini.embed.return_value = [vector]
         self.set_questions([make_question("조인 비용은?"), make_question("어떤 이상이 줄어드나요?")])
         draft = self.gemini.generate.return_value
-        for course_id in ("advanced-db", "invented-course"):
-            with self.subTest(course_id=course_id):
-                selection = PageSelections.model_validate({
-                    "pages": [{"page_number": 2, "paper_ids": [], "related_courses": [{
-                        "course_id": course_id, "reason": "조인 비용을 더 살펴볼 수 있습니다.",
-                        "next_topic": "질의 최적화",
-                    }]}],
-                })
-                self.gemini.generate.side_effect = [draft, selection]
-                if course_id == "invented-course":
-                    with self.assertRaisesRegex(ProviderError, "Invalid or duplicate course"):
+        selections = {
+            "aliases": make_selection(courses=["p2-c1", "p2-c2"]),
+            "raw": make_selection(courses=["intro-db"]),
+        }
+        # 모델에는 별칭만 보이므로 원래 ID를 그대로 적어도 후보 밖 참조다.
+        # 세 번까지 다시 요청하고, 그 사이 올바른 응답이 오면 그것을 쓴다.
+        for responses in (
+            [selections["raw"]] * 3,
+            [selections["raw"], selections["aliases"]],
+        ):
+            with self.subTest(responses=len(responses)):
+                self.gemini.embed.reset_mock()
+                self.gemini.generate.reset_mock()
+                self.db.execute.reset_mock()
+                self.db.execute.side_effect = [[previous], [later]]
+                self.gemini.generate.side_effect = [draft, *responses]
+                if len(responses) == 3:
+                    with self.assertRaisesRegex(ProviderError, "Invalid or duplicate course"), redirect_stdout(StringIO()):
                         generate_learning(self.db, self.gemini, self.course, self.extraction)
                     continue
-                page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
-                self.assertEqual(page["related_courses"][0]["course_id"], "advanced-db")
-                self.assertEqual(page["related_courses"][0]["source"], "ai_recommendation")
-                self.assertEqual(page["related_courses"][0]["next_topic"], "질의 최적화")
+                with redirect_stdout(StringIO()):
+                    page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
+                first, second = page["questions"]
+                self.assertEqual(
+                    [(link["course_id"], link["relation"]) for link in first["related_courses"]],
+                    [("intro-db", "previous"), ("big-data", "next")],
+                )
+                self.assertEqual(first["related_courses"][0]["source"], "ai_recommendation")
+                self.assertEqual(second["related_courses"], [])
                 analysis_request = self.gemini.generate.call_args_list[0].args[1]
                 self.assertEqual(analysis_request["course"]["topics"], topics)
-                search_request = self.gemini.generate.call_args_list[1].args[1]
-                self.assertEqual(search_request["pages"][0]["course_candidates"][0]["topics"], ["질의 최적화"])
+                search_request = self.gemini.generate.call_args_list[1].args[1]["pages"][0]
+                self.assertEqual(
+                    [(item["course_id"], item["relation"]) for item in search_request["course_candidates"]],
+                    [("p2-c1", "previous"), ("p2-c2", "next")],
+                )
+                self.assertEqual([item["question_number"] for item in search_request["questions"]], [1, 2])
                 self.gemini.embed.assert_called_once_with(
                     ["함수 종속성에 따른 분해\n함수 종속성"], "RETRIEVAL_QUERY"
                 )
+                # pgvector 검색 쿼리에 학기 조건이 들어갔는지 확인한다
+                queries = [str(call.args[0].compile()) for call in self.db.execute.call_args_list]
+                self.assertIn("course_learning_profile.semester_order <", queries[0])
+                self.assertIn("course_learning_profile.semester_order >", queries[1])
+                self.assertTrue(all("ORDER BY course_learning_profile.embedding <=>" in query for query in queries))
 
     def test_research_summary_uses_search_result_and_cached_metadata(self):
         self.course.is_trend_enabled = True
         self.set_questions([make_question("조인 비용은?"), make_question("어떤 이상이 줄어드나요?")])
         draft = self.gemini.generate.return_value
         paper_id = "a" * 40
-        selection = PageSelections.model_validate({
-            "pages": [{"page_number": 2, "paper_ids": [paper_id], "related_courses": []}],
-        })
+        selection = make_selection(papers=["r1"])
         self.gemini.generate.side_effect = [
-            ResearchQuery(query="database normalization"),
+            ResearchQueries(queries=["database normalization"]),
             PaperSummaries(papers=[{"paper_id": paper_id, "summary": "정규화의 비용을 비교합니다."}]),
             draft, selection,
             draft, selection,
@@ -141,36 +189,95 @@ class LearningContractTest(TestCase):
         ]}) as search:
             page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
             self.assertEqual(page["research_status"], "ready")
-            self.assertEqual(len(page["trends"]), 1)
-            self.assertEqual(page["trends"][0]["url"], f"https://www.semanticscholar.org/paper/{paper_id}")
-            self.assertEqual(page["trends"][0]["summary"], "정규화의 비용을 비교합니다.")
+            trends = page["questions"][0]["trends"]
+            self.assertEqual(len(trends), 1)
+            self.assertEqual(trends[0]["url"], f"https://www.semanticscholar.org/paper/{paper_id}")
+            self.assertEqual(trends[0]["summary"], "정규화의 비용을 비교합니다.")
+            self.assertEqual(page["questions"][1]["trends"], [])
             self.db.commit.assert_called_once()
 
             def get_cached(model, course_id):
                 self.assertEqual(course_id, self.course.id)
                 if model is CourseResearchCache:
-                    return SimpleNamespace(searched_at=now, papers=page["trends"])
+                    return SimpleNamespace(searched_at=now, papers=trends)
                 self.assertIs(model, CourseLearningProfile)
                 return None
 
             self.db.get.side_effect = get_cached
             cached = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
-            self.assertEqual(cached["trends"], page["trends"])
+            self.assertEqual(cached["questions"][0]["trends"], trends)
             search.assert_called_once()
             self.db.commit.assert_called_once()
+
+    def test_research_merges_queries_and_keeps_results_when_one_search_fails(self):
+        self.course.is_trend_enabled = True
+        self.set_questions([make_question("조인 비용은?"), make_question("어떤 이상이 줄어드나요?")])
+        draft = self.gemini.generate.return_value
+        paper_id = "a" * 40
+        now = datetime.now(timezone.utc)
+        self.gemini.generate.side_effect = [
+            ResearchQueries(queries=["database normalization", "query optimization"]),
+            PaperSummaries(papers=[{"paper_id": paper_id, "summary": "정규화의 비용을 비교합니다."}]),
+            draft, make_selection(papers=["r1"]),
+        ]
+        hit = {"data": [{"paperId": paper_id, "title": "Normalization costs", "abstract": "We compare schemas.",
+                         "year": now.year}]}
+        with (
+            patch("app.integrations.semantic_scholar.request_json",
+                  side_effect=[hit, *[ProviderError("test 429")] * 4]) as search,
+            patch("app.services.research.time.sleep"),
+            redirect_stdout(StringIO()),
+        ):
+            page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
+        # 두 번째 검색어는 네 번 모두 429지만 첫 검색어의 논문으로 계속한다
+        self.assertEqual(search.call_count, 5)
+        self.assertEqual(page["questions"][0]["trends"][0]["paper_id"], paper_id)
+        self.assertEqual(page["questions"][0]["trends"][0]["source"], "semantic_scholar")
+        self.db.commit.assert_called_once()
+
+    def test_search_failure_falls_back_to_uncached_gemini_directions(self):
+        self.course.is_trend_enabled = True
+        self.set_questions([make_question("조인 비용은?"), make_question("어떤 이상이 줄어드나요?")])
+        draft = self.gemini.generate.return_value
+        selection = make_selection(papers=["r1"])
+        self.gemini.generate.side_effect = [
+            ResearchQueries(queries=["database normalization"]),
+            ResearchDirections(directions=[{
+                "title": "정규화와 조회 성능의 균형", "summary": "분해 이후의 조인 비용을 다룹니다.",
+                "search_query": "denormalization query performance",
+            }]),
+            draft, selection,
+        ]
+        with (
+            patch("app.integrations.semantic_scholar.request_json", side_effect=ProviderError("test 429")) as search,
+            patch("app.services.research.time.sleep"),
+            redirect_stdout(StringIO()),
+        ):
+            page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
+        self.assertEqual(search.call_count, 4)
+        self.assertEqual(page["research_status"], "ready")
+        trend = page["questions"][0]["trends"][0]
+        self.assertEqual((trend["source"], trend["year"]), ("gemini", None))
+        self.assertTrue(trend["url"].startswith("https://scholar.google.com/scholar?q=denormalization"))
+        self.db.execute.assert_not_called()
+        self.db.commit.assert_not_called()
 
     def test_research_failure_keeps_questions_available(self):
         self.course.is_trend_enabled = True
         self.set_questions([make_question("조인 비용은?"), make_question("어떤 이상이 줄어드나요?")])
         self.gemini.generate.side_effect = [
-            ResearchQuery(query="database normalization"), self.gemini.generate.return_value,
+            ResearchQueries(queries=["database normalization"]), ProviderError("test 503"),
+            self.gemini.generate.return_value,
         ]
-        with patch("app.integrations.semantic_scholar.request_json", side_effect=ProviderError("test 403")):
+        with patch(
+            "app.integrations.semantic_scholar.request_json",
+            side_effect=ProviderError("test 403", retryable=False),
+        ) as search:
             with redirect_stdout(StringIO()):
                 page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
+        search.assert_called_once()
         self.assertEqual(page["research_status"], "unavailable")
-        self.assertEqual(page["trends"], [])
-        self.assertEqual(len(page["questions"]), 2)
+        self.assertEqual([question["trends"] for question in page["questions"]], [[], []])
 
     def test_follow_up_uses_same_page_evidence(self):
         page = self.extraction["pages"][1]

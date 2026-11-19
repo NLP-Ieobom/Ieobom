@@ -29,9 +29,16 @@ def read_catalog(path: Path) -> tuple[int, list[dict]]:
                     for topic in week["topics"]
                     if topic["text"].strip()
                 ))
+            orders = [
+                placement["year"] * 10 + placement["semester"]
+                for placement in entry.get("placements", [])
+                if isinstance(placement.get("year"), int) and isinstance(placement.get("semester"), int)
+            ]
             catalog.append({
                 "corpus_id": entry["course_id"], "name": entry["name"],
                 "code": entry["course_code"], "topics": topics,
+                # 트랙마다 편성 학기가 다르면 가장 이른 학기를 쓴다
+                "semester_order": min(orders) if orders else None,
             })
     if len({entry["corpus_id"] for entry in catalog}) != len(catalog):
         raise ValueError("The catalog contains duplicate course IDs")
@@ -70,22 +77,34 @@ def import_catalog(db: Session, gemini: Gemini, path: Path) -> int:
             profile = CourseLearningProfile(course_id=course.id, corpus_id=entry["corpus_id"])
             db.add(profile)
         profile.topics = entry["topics"]
+        profile.semester_order = entry["semester_order"]
         profile.embedding_model = gemini.embedding_model
         profile.embedding = vector
     db.commit()
     return len(catalog)
 
 
-def find_candidates(db: Session, course_id, embedding_model: str, vector: list[float]) -> list[dict]:
+def find_candidates(
+    db: Session, course_id, embedding_model: str, vector: list[float], *,
+    relation: str = "related", semester_order: int | None = None, limit: int = 5,
+) -> list[dict]:
+    """Return the courses nearest to the slide vector.
+
+    relation="previous" keeps courses placed before semester_order and "next" keeps those after it.
+    Courses in the same semester belong to neither. "related" ignores semesters.
+    """
     query = (
         select(Course.id, Course.name, CourseLearningProfile.topics)
         .join(CourseLearningProfile, CourseLearningProfile.course_id == Course.id)
         .where(Course.id != course_id, CourseLearningProfile.embedding_model == embedding_model)
-        .order_by(CourseLearningProfile.embedding.cosine_distance(vector), Course.id)
-        .limit(5)
     )
+    if relation == "previous":
+        query = query.where(CourseLearningProfile.semester_order < semester_order)
+    elif relation == "next":
+        query = query.where(CourseLearningProfile.semester_order > semester_order)
+    query = query.order_by(CourseLearningProfile.embedding.cosine_distance(vector), Course.id).limit(limit)
     return [
-        {"course_id": str(course.id), "name": course.name, "topics": course.topics}
+        {"course_id": str(course.id), "name": course.name, "topics": course.topics, "relation": relation}
         for course in db.execute(query)
     ]
 

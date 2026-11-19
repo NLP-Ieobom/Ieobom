@@ -1,10 +1,12 @@
 # 탐구 질문과 후속 학습 연동
 
-업로드 완료 후 기존 워커가 Docling 결과를 팀의 추출 v1 형식으로 저장한다. 원본 페이지 번호, 블록 ID, 좌상단 기준 좌표를 유지한다. 생성 파이프라인은 `pdf_extraction` 브랜치의 추출 JSON도 입력으로 받는다. Gemini가 페이지 요약·설명 범위와 탐구 질문을 작성하고, 워커는 적격 페이지당 2~3개 질문과 실제 근거 블록을 검증한다. 표지 등 제외된 페이지는 제외 이유를 함께 저장한다. 질문에는 해설, 추천 이유, 선행 개념, 학습 순서와 첫 활동을 담는다. 일시적 생성 오류는 저장된 추출 결과에서 다시 시작한다.
+업로드 완료 후 기존 워커가 Docling 결과를 팀의 추출 v1 형식으로 저장한다. 원본 페이지 번호, 블록 ID, 좌상단 기준 좌표를 유지한다. 생성 파이프라인은 `pdf_extraction` 브랜치의 추출 JSON도 입력으로 받는다. Gemini가 페이지 요약·설명 범위와 탐구 질문을 작성하고, 워커는 적격 페이지당 2~3개 질문과 실제 근거 블록을 검증한다. 표지 등 제외된 페이지는 제외 이유를 함께 저장한다. 질문은 학생이 스스로 던질 법한 의문문이며 추천 이유, 선행 개념, 학습 순서와 첫 활동을 담는다. 더 알아보기에 쓰는 해설·이어서 볼 과목·연구 동향도 질문마다 저장한다. 해설은 `explanation.headline`(한 줄 핵심), `explanation.body`(강의 근거와 이유), `explanation.flow`(개념이 이어지는 흐름 2~4단계)로 나눈다. 질문 수나 근거·과목·논문 참조 규칙을 어긴 응답은 해당 3쪽 묶음만 최대 세 번 다시 요청한다. 그래도 맞지 않거나 일시적 생성 오류가 나면 작업을 저장된 추출 결과에서 다시 시작한다.
 
-교육과정 ZIP을 인덱싱하면 슬라이드 개념에 가까운 과목을 pgvector로 조회한다. Gemini는 이 후보 안에서 과목과 이어서 학습할 주제를 고른다. 응답의 `source` 값은 `ai_recommendation`이다. 공식 선수관계는 검증된 데이터가 제공되면 별도로 연결할 수 있다.
+교육과정 ZIP을 인덱싱하면 과목마다 계획서 주제 벡터와 가장 이른 편성 학기(`semester_order`, 3학년 2학기는 32)를 저장한다. 질문의 쪽 요약·개념 벡터로 pgvector를 두 번 조회해 이 과목보다 앞 학기 과목 3개와 뒤 학기 과목 3개를 후보로 만든다. 같은 학기 과목은 어느 쪽에도 넣지 않는다. Gemini는 질문마다 이 후보 안에서 과목을 고르고 연결 이유와 다시 볼 주제 또는 이어서 볼 주제(`next_topic`)를 쓴다. 각 과목의 `relation`은 `previous`(이전에 들은 관련 과목), `next`(이후에 들을 과목), `related`(이 과목의 학기 정보가 없을 때) 중 하나이고 `source`는 `ai_recommendation`이다. 교육과정 ZIP의 공식 선수과목(`official_prerequisites`)은 현재 52과목 모두 비어 있어 선수과목으로 표시하지 않는다. 검증된 공식 관계가 제공되면 별도 출처로 연결할 수 있다.
 
 `course.is_trend_enabled`를 켠 과목은 Semantic Scholar 검색 결과에서 최근 5개 연도의 논문을 고른다. 초록 기반 요약과 원문 링크, 검색 시점을 30일 동안 과목 단위로 재사용한다. 페이지에는 관련 논문만 연결한다. `research_status`는 `disabled`, `ready`, `unavailable` 중 하나다. `ready`일 때도 해당 페이지에 맞는 논문이 없으면 목록은 비어 있다.
+
+Semantic Scholar가 429 같은 오류로 응답하지 않으면 3초, 10초 뒤에 다시 시도한다. 그래도 실패하면 Gemini가 과목명과 계획서 주제로 연구 방향 3~5개를 정리한다. 이 항목은 `source: "gemini"`, `year: null`이며 논문 링크 대신 검색어로 만든 Google Scholar 검색 링크를 담는다. 없는 논문을 만들지 않도록 제목에는 연구 방향의 이름만 쓴다. 대체 결과는 캐시하지 않으므로 다음 분석에서 논문 검색을 다시 시도한다. Gemini도 실패하면 `unavailable`이다.
 
 ## 프런트엔드 연동
 
@@ -15,14 +17,14 @@
 | GET | `/api/v1/documents/{document_id}/pages/{page_number}/learning` | 분석, 질문, 근거 좌표, 관련 과목, 연구 동향 |
 | POST | `/api/v1/documents/{document_id}/pages/{page_number}/ask` | 추가 질문 해설과 근거 블록 ID |
 
-GET은 DB에 저장된 결과를 읽는다. POST에는 `{"question":"함수 종속성을 다시 설명해 줘"}`처럼 본문을 보내면 Gemini가 그 페이지 자료를 근거로 답한다. 두 경로 모두 문서 소유권을 확인한다. 미생성 결과와 다른 사용자의 문서에는 404를 반환한다. 페이지 본문의 `evidence_blocks`를 `block_id`로 찾고 정규화 좌표에 렌더링 크기를 곱하면 원문 위치를 표시할 수 있다.
+GET은 DB에 저장된 결과를 읽는다. POST에는 `{"question":"함수 종속성을 다시 설명해 줘"}`처럼 본문을 보내면 Gemini가 그 페이지 자료를 근거로 답한다. 두 경로 모두 문서 소유권을 확인한다. 미생성 결과와 다른 사용자의 문서에는 404를 반환한다. 페이지 본문의 `evidence_blocks`를 `block_id`로 찾고 정규화 좌표에 렌더링 크기를 곱하면 원문 위치를 표시할 수 있다. 응답의 모든 필드와 화면별 사용 위치는 [learning-output.md](learning-output.md)에 정리했다.
 
 ## 실행 설정
 
 - EC2에서는 기존 `~/ieobom/.env`에 DB·S3 설정과 `GEMINI_API_KEY`를 넣는다. 구성 변수는 저장소의 `.env.example`에 있다. Gemini 키가 비어 있으면 PDF 추출까지만 실행된다.
 - API 컨테이너가 Alembic 마이그레이션을 끝내고 헬스체크에 응답하면 워커가 시작된다. 기존 Docling 도구 이미지를 호스트에 준비한다. 이미지가 없으면 배포 디렉터리에서 `docker compose --profile tools build docling`을 실행한다.
 - 워커와 API에서 `generativelanguage.googleapis.com`에 HTTPS로 연결할 수 있어야 한다. 연구 동향을 사용하는 워커에는 `api.semanticscholar.org` 접근이 필요하다. `SEMANTIC_SCHOLAR_API_KEY`는 해당 서비스의 키를 발급받은 환경에서 설정한다.
-- 과목 연결을 사용하려면 `pdf_extraction` 브랜치의 `docs/extraction/demo/ieobom-ssu-corpus.zip`을 한 번 인덱싱한다. 현재 사용 중인 과목은 과목 코드와 교육과정 연도로 매칭해 ID를 재사용한다. 임베딩 모델을 바꾸면 다시 인덱싱한다.
+- 과목 연결을 사용하려면 `pdf_extraction` 브랜치의 `docs/extraction/demo/ieobom-ssu-corpus.zip`을 한 번 인덱싱한다. 현재 사용 중인 과목은 과목 코드와 교육과정 연도로 매칭해 ID를 재사용한다. 임베딩 모델을 바꾸면 다시 인덱싱한다. 편성 학기 컬럼(`5d2e7a1c9b40` 마이그레이션)을 추가하기 전에 인덱싱했다면 이전·이후 과목을 나누도록 한 번 더 인덱싱한다.
 
 ```bash
 docker compose exec -T worker sh -c 'cat > /tmp/ieobom-ssu-corpus.zip && python -m app.services.curriculum_search /tmp/ieobom-ssu-corpus.zip' < ieobom-ssu-corpus.zip
@@ -116,31 +118,33 @@ cd backend
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-질문·과목 후보·연구 동향·추가 답변을 포함한 회귀 테스트 7개를 실행한다. 모의 응답으로 표지 제외, 원문 근거 유지, 중복과 후보 밖 참조 차단, 연구 동향 캐시, 논문 검색 장애 시 질문 제공, Docling 좌표 변환을 확인한다.
+질문·과목 후보·연구 동향·추가 답변을 포함한 회귀 테스트 12개를 실행한다. 모의 응답으로 표지 제외, 원문 근거 유지, 중복과 후보 밖 참조 차단, 규칙을 어긴 묶음만 다시 요청하기, 이전·이후 학기 과목 검색 조건, 여러 검색어의 논문 합치기, 연구 동향 캐시, 논문 검색 장애 시 Gemini 연구 방향 대체와 질문 제공, 명령줄의 메모리 과목 검색, Docling 좌표 변환을 확인한다.
 
 PostgreSQL을 사용한 통합 점검에서는 테스트 DB에 마이그레이션을 적용하고 팀의 실제 예시 JSON과 52과목 ZIP을 사용했다. S3·Docling 변환·Gemini·Semantic Scholar는 테스트 응답으로 대체했다. 과목을 다시 인덱싱해도 ID가 유지되는지, 작업 재시도가 추출 결과를 재사용하는지, API 조회에 Gemini 호출이 없는지, 다른 계정의 조회가 404인지, 논문 캐시와 추가 질문 응답이 이어지는지 검사했다.
 
 ### 업로드 없이 생성 결과 확인
 
-팀 추출 JSON을 유진 님의 생성 모듈에 직접 넣을 수 있다. FastAPI, S3, Docling 워커를 켤 필요는 없다. 아래 명령은 Gemini를 실제 호출하므로, Gemini 연결이 가능하고 `GEMINI_API_KEY`가 설정된 환경에서 실행한다.
+팀 추출 JSON을 넣으면 결과 JSON을 파일로 쓴다. FastAPI, S3, Docling 워커, DB를 켤 필요는 없다. Gemini를 실제 호출하므로 `GEMINI_API_KEY`가 있는 `.env`를 넘긴다. 출력 형식은 [learning-output.md](learning-output.md)에, 이 명령으로 만든 실제 결과는 [examples/learning.example.json](examples/learning.example.json)에 있다.
 
 ```bash
 git fetch origin pdf_extraction
 git show FETCH_HEAD:docs/extraction/pdf.example.json > /tmp/ieobom-page-example.json
 cd backend
-PYTHONPATH=. .venv/bin/python tests/check_learning_sample.py /tmp/ieobom-page-example.json \
-  --page 2 --ask '정규화하면 조회 비용도 항상 줄어드나요?' > /tmp/ieobom-learning-result.json
+python -m app.pipelines.learning_cli /tmp/ieobom-page-example.json -o /tmp/ieobom-learning-result.json \
+  --env-file ../.env --course-name 데이터베이스 --trends --page 2 --ask '정규화하면 조회 비용도 항상 줄어드나요?'
 ```
+
+`--corpus ieobom-ssu-corpus.zip --course-code 21501666`을 덧붙이면 교육과정 ZIP을 메모리에서 임베딩해 pgvector 검색과 같은 계산으로 이전·이후 학기 과목을 찾는다. 과목 벡터는 ZIP 옆 파일에 저장해 다음 실행에 재사용한다. 일시적인 Gemini 오류는 호출 단위로 다시 시도하며, `GEMINI_FALLBACK_MODELS`에 쉼표로 적은 모델을 번갈아 쓴다.
 
 결과 JSON에서 `pages["1"].questions`는 빈 배열이고, `pages["2"].questions`에는 질문 2~3개가 있어야 한다. 첫 질문을 읽고, `evidence_block_ids`가 같은 페이지의 원문 내용과 실제로 관련돼 있는지 확인한다. `follow_up`에는 답변과 인용한 블록 ID가 나온다. 출력의 형식과 참조는 검사 코드가 확인하며, 질문이 유용하고 해설이 타당한지는 자료와 대조해 읽는다.
 
-과목 추천과 연구 동향도 같은 명령으로 확인할 수 있다. 교육과정 ZIP을 인덱싱한 테스트 DB를 `DATABASE_URL`로 지정하고 아래 인자를 덧붙인다. 연구 동향을 실제 호출하려면 테스트 과목의 `is_trend_enabled`가 켜져 있고 유효한 논문 캐시가 없어야 한다. 검증 중 생성한 캐시는 테스트 종료 시 롤백된다.
+실제 DB의 과목 인덱스로 확인하려면 `tests/check_learning_sample.py`를 쓴다. 교육과정 ZIP을 인덱싱한 테스트 DB를 `DATABASE_URL`로 지정하고 위와 같은 추출 JSON과 아래 인자를 넘긴다. 연구 동향을 실제 호출하려면 테스트 과목의 `is_trend_enabled`가 켜져 있고 유효한 논문 캐시가 없어야 한다. 검증 중 생성한 캐시는 테스트 종료 시 롤백된다.
 
 ```text
 --course-code 21501656 --curriculum-year 2026
 ```
 
-이 경우 `related_courses`의 항목은 검색한 후보에서 나온 AI 추천이어야 한다. `research_status`가 `ready`이고 `trends`가 비어 있으면 해당 페이지와 직접 연결되는 논문을 모델이 선택하지 않은 상태다. `unavailable`이면 연구 검색이나 요약을 완료하지 못한 상태다. 현재 클라우드에서 차단된 외부 API는 연결할 수 있는 환경에서 검증한다.
+이 경우 질문마다 `related_courses`의 항목은 검색한 후보에서 나온 AI 추천이어야 한다. `research_status`가 `ready`이고 질문의 `trends`가 비어 있으면 그 질문과 직접 연결되는 논문을 모델이 선택하지 않은 상태다. `unavailable`이면 연구 검색이나 요약을 완료하지 못한 상태다. 현재 클라우드에서 차단된 외부 API는 연결할 수 있는 환경에서 검증한다.
 
 ### 실제 PDF 한 건으로 수동 확인
 

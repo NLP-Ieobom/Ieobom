@@ -36,10 +36,19 @@ class FollowUpAnswer(StructuredOutput):
     evidence_block_ids: list[Text] = Field(min_length=1)
 
 
-class Question(FollowUpAnswer):
+class Explanation(StructuredOutput):
+    # 더 알아보기의 해설: 한 줄 핵심, 강의 근거와 이유를 담은 설명, 개념이 이어지는 흐름
+    headline: Text
+    body: Text
+    flow: list[Text] = Field(min_length=2, max_length=4)
+
+
+class Question(StructuredOutput):
     type: QuestionType
     question: Text
     why_recommended: Text
+    explanation: Explanation
+    evidence_block_ids: list[Text] = Field(min_length=1)
     prerequisites: list[Text]
     learning_steps: list[Text] = Field(min_length=1, max_length=3)
     first_activity: Text
@@ -63,21 +72,30 @@ class CourseChoice(StructuredOutput):
 
 class CourseLink(CourseChoice):
     name: str
+    # previous: 이 과목보다 앞 학기에 듣는 관련 과목, next: 뒤 학기에 들을 과목, related: 학기 정보가 없는 후보
+    relation: Literal["previous", "next", "related"] = "related"
     source: Literal["ai_recommendation"] = "ai_recommendation"
+
+
+class QuestionSelection(StructuredOutput):
+    # 쪽 안에서 질문의 순서(1부터)
+    question_number: int
+    # 이전에 들은 관련 과목과 이후에 들을 과목을 각각 두 개까지
+    related_courses: list[CourseChoice] = Field(max_length=4)
+    paper_ids: list[Text] = Field(max_length=2)
 
 
 class PageSelection(StructuredOutput):
     page_number: int
-    related_courses: list[CourseChoice] = Field(max_length=3)
-    paper_ids: list[Text] = Field(max_length=3)
+    questions: list[QuestionSelection]
 
 
 class PageSelections(StructuredOutput):
     pages: list[PageSelection]
 
 
-class ResearchQuery(StructuredOutput):
-    query: Text
+class ResearchQueries(StructuredOutput):
+    queries: list[Text] = Field(min_length=1, max_length=3)
 
 
 class PaperSummary(StructuredOutput):
@@ -89,11 +107,23 @@ class PaperSummaries(StructuredOutput):
     papers: list[PaperSummary]
 
 
+class ResearchDirection(StructuredOutput):
+    title: Text
+    summary: Text
+    search_query: Text
+
+
+class ResearchDirections(StructuredOutput):
+    directions: list[ResearchDirection] = Field(min_length=1, max_length=5)
+
+
 class ResearchTrend(PaperSummary):
     title: str
-    year: int
+    # Gemini가 정리한 연구 방향은 특정 논문이 아니라서 연도가 없다
+    year: int | None
     url: str
     searched_at: datetime
+    source: Literal["semantic_scholar", "gemini"] = "semantic_scholar"
 
 
 class EvidenceBlock(BaseModel):
@@ -101,12 +131,17 @@ class EvidenceBlock(BaseModel):
     bbox: tuple[float, float, float, float]
 
 
+class QuestionLearning(Question):
+    # 더 알아보기의 이어서 볼 과목과 연구 동향은 질문마다 고른다
+    related_courses: list[CourseLink]
+    trends: list[ResearchTrend]
+
+
 class PageLearning(PageDraft):
+    questions: list[QuestionLearning] = Field(max_length=3)
     width_pt: float
     height_pt: float
     evidence_blocks: list[EvidenceBlock]
-    related_courses: list[CourseLink]
-    trends: list[ResearchTrend]
     research_status: Literal["disabled", "ready", "unavailable"]
 
 
