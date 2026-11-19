@@ -5,6 +5,9 @@
 
 숭실대 AI소프트웨어학부 교육과정을 기준으로 한다. 2025-2학기 자연언어처리 팀 프로젝트.
 
+> **`making_question` 브랜치**는 탐구 질문 생성, 연구 동향, 후속 학습 방향(이어서 볼 과목)을 맡는다.
+> 서버에 합칠 때 필요한 코드 구성과 입출력은 아래 [이 브랜치의 코드 구성과 입출력](#이-브랜치의-코드-구성과-입출력)에 정리했다.
+
 ## 왜 만드나
 
 수업에서 개념은 이해했는데 "그래서 뭘 더 찾아봐야 하지"에서 막히는 경우가 많다.
@@ -61,3 +64,96 @@ PostgreSQL의 잡 테이블로만 주고받는다. 구조와 파이프라인은 
 ```bash
 cp .env.example .env
 ```
+
+## 이 브랜치의 코드 구성과 입출력
+
+Docling 추출 결과를 받아 쪽마다 분석, 탐구 질문, 질문의 근거 블록 ID, 더 알아보기 내용(해설·이어서 볼 과목·연구 동향)을 담은 학습 결과 JSON을 만든다. 서버는 이 JSON을 문서마다 저장하고 쪽 단위로 내준다. 결과 JSON의 필드는 [docs/learning-output.md](docs/learning-output.md)에, 실행 설정과 테스트 방법은 [docs/learning.md](docs/learning.md)에 자세히 적었다.
+
+### 입력과 출력
+
+| 구분 | 형식 | 오는 곳 / 가는 곳 |
+| --- | --- | --- |
+| 입력 | 팀 공통 추출 v1 JSON. `schema_version: "1.0"`, 좌상단 기준 정규화 좌표, 쪽마다 `blocks[]`(`block_id`, `kind`, `text`, `bbox`, 표) | 워커가 Docling 결과를 변환해 `document_learning.extraction`에 저장 |
+| 출력 | 학습 결과 JSON. `pages["쪽 번호"]`마다 `analysis`, `questions[]`(질문, `evidence_block_ids`, 해설, 이어서 볼 과목, 연구 동향), `evidence_blocks[]`(블록 좌표) | `document_learning.result`에 저장하고 API가 쪽 단위로 반환 |
+| 추가 질문 | 쪽 번호와 학생의 질문 | 답변과 근거 블록 ID. 저장하지 않고 바로 응답 |
+
+### 서버 처리 흐름
+
+```text
+PDF 업로드 → analysis_job 등록
+  → 워커 (app/worker/run.py)
+      1. S3에서 PDF를 받아 Docling 실행
+      2. docling_output.load_docling_extraction()         → 추출 v1 JSON  → document_learning.extraction
+      3. learning.generate_learning(db, gemini, course, …) → 학습 결과 JSON → document_learning.result
+  → API (app/api/documents.py)
+      GET  /api/v1/documents/{document_id}/pages/{page_number}/learning   저장된 쪽 결과 반환 (Gemini 호출 없음)
+      POST /api/v1/documents/{document_id}/pages/{page_number}/ask        answer_follow_up()으로 Gemini 호출
+```
+
+`GEMINI_API_KEY`가 없으면 2단계까지만 저장하고, 키를 넣은 뒤 결과를 채울 수 있다. Gemini의 일시적 오류는 잡 단위로 최대 세 번 다시 시도한다. 두 API 모두 문서 소유권을 확인하고, 결과가 없거나 다른 사용자의 문서면 404를 반환한다.
+
+### 파일별 역할
+
+| 파일 | 역할 | 입력 → 출력 |
+| --- | --- | --- |
+| `app/pipelines/learning.py` | 생성의 핵심. 쪽 분석, 질문·해설 생성, 과목·논문 선택, 결과 검증 | `generate_learning`: 추출 v1 dict → 학습 결과 dict<br>`answer_follow_up`: 쪽과 학생 질문 → 답변 |
+| `app/pipelines/learning_cli.py` | DB 없이 실행하는 명령줄. 과목 검색을 pgvector와 같은 계산으로 메모리에서 한다 | 추출 JSON 파일 → 학습 결과 JSON 파일 |
+| `app/pipelines/docling_output.py` | 워커가 받은 Docling 출력을 추출 v1 형식으로 변환 | Docling 출력 폴더 → 추출 v1 dict |
+| `app/services/curriculum_search.py` | 교육과정 ZIP 인덱싱(`import_catalog`), 과목 후보 검색(`find_candidates`) | ZIP → `course_learning_profile`<br>쪽 벡터 → 앞 학기·뒤 학기 과목 후보 |
+| `app/services/research.py` | 연구 동향(`course_trends`). Semantic Scholar 검색, 초록 요약, 검색 실패 시 Gemini 연구 방향 | 과목 → 논문 요약 목록(30일 캐시) |
+| `app/integrations/gemini.py` | Gemini 텍스트 생성(응답 JSON 스키마 지정)과 임베딩 | 지시문·데이터·스키마 → 검증된 객체 |
+| `app/integrations/semantic_scholar.py`, `learning_http.py` | 논문 검색, 외부 API 호출과 재시도 가능 여부 판단 | 검색어 → 최근 5년 논문 |
+| `app/schemas/learning.py` | 학습 결과 JSON의 Pydantic 스키마(`PageLearning`, `QuestionLearning` 등) | API 응답 모델과 생성 결과 검증에 같이 쓴다 |
+| `app/models/learning.py` | 아래 DB 테이블 세 개 | |
+| `app/api/documents.py` | 위 learning·ask 경로 | |
+| `app/worker/run.py` | 업로드 후 추출과 생성 | |
+| `migrations/versions/c4ab0f5b3168`, `5d2e7a1c9b40` | 테이블 생성, 과목 편성 학기 컬럼 추가 | |
+| `tests/test_learning.py`, `test_learning_cli.py` | 회귀 테스트 12개. API 키 없이 실행 | |
+
+### DB 테이블
+
+| 테이블 | 기본 키 | 내용 |
+| --- | --- | --- |
+| `document_learning` | `document_id` | `extraction`(추출 v1, JSONB), `result`(학습 결과 JSON, JSONB) |
+| `course_learning_profile` | `course_id` | 교육과정 과목의 계획서 주제, 편성 학기(`semester_order`, 3학년 2학기는 32), 임베딩(vector 1536) |
+| `course_research_cache` | `course_id` | 과목별 논문 요약과 검색 시점. 30일 동안 재사용 |
+
+### 외부 API를 부르는 시점
+
+| 시점 | 호출 |
+| --- | --- |
+| 문서 분석(업로드마다 한 번) | Gemini 텍스트: 3쪽마다 분석·질문 생성 1번, 과목·논문 선택 1번<br>Gemini 임베딩: 질문을 만든 쪽의 요약마다 1개 |
+| 교육과정 인덱싱(한 번) | Gemini 임베딩: 과목 수만큼 |
+| 연구 동향(과목마다 30일에 한 번) | Gemini로 검색어와 요약, Semantic Scholar 검색 2~3번 |
+| 추가 질문(요청마다) | Gemini 텍스트 1번 |
+| 결과 조회 | 없음 |
+
+### 환경 변수
+
+| 변수 | 쓰는 곳 | 비고 |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | 워커, 추가 질문 API | 없으면 추출만 저장하고 추가 질문은 503 |
+| `GEMINI_TEXT_MODEL` | 텍스트 생성 | 기본값 `gemini-2.5-flash`는 새로 발급한 키에서 404를 반환한다. 쓸 수 있는 모델로 바꾼다 |
+| `GEMINI_EMBEDDING_MODEL` | 임베딩 | 바꾸면 교육과정을 다시 인덱싱한다 |
+| `SEMANTIC_SCHOLAR_API_KEY` | 연구 동향 | 없으면 공용 한도라 429가 잦다 |
+| `SEMANTIC_SCHOLAR_TIMEOUT` | 연구 동향 | 기본 20초 |
+| `GEMINI_FALLBACK_MODELS` | 명령줄 생성기만 | 과부하 때 번갈아 쓸 모델(쉼표로 구분) |
+
+### 바로 실행해 보기
+
+```bash
+cd backend
+python -m unittest discover -s tests -v          # 키 없이 회귀 테스트 12개
+python -m app.pipelines.learning_cli extraction.json -o learning.json --env-file ../.env \
+  --corpus ieobom-ssu-corpus.zip --course-code 21501666 --trends   # 추출 JSON → 학습 결과 JSON
+```
+
+팀 예시 입력으로 실제 생성한 결과는 [docs/examples/learning.example.json](docs/examples/learning.example.json)에 있다.
+
+### main에 합칠 때 할 일
+
+- **워커 연결**: main 워커는 `pdf_extraction` 추출기로 같은 추출 v1 JSON을 만들고, `document_analysis.analyze_document(extraction)`는 아직 빈 결과를 돌려준다. 그 자리에서 `generate_learning`을 부르고 결과를 `document_learning.result`에 저장하면 된다. 이 브랜치의 `docling_output.py` 변환은 main 추출기로 대체할 수 있다.
+- **API**: `app/api/documents.py`는 양쪽에서 모두 수정했다. 이 브랜치의 learning·ask 경로 두 개를 main 파일로 옮긴다.
+- **마이그레이션**: 이 브랜치의 Alembic 경로(`c4ab0f5b3168` → `5d2e7a1c9b40`)와 main의 head를 하나로 잇고, `migrations/env.py`에 learning 모델을 등록한다.
+- **질문 저장과 연결**: main의 `question` 테이블에는 해설·근거 블록 ID·이어서 볼 과목·연구 동향 컬럼이 없다. 저장 버튼(`is_saved`)과 원문 표시가 같은 질문을 가리키려면 생성 질문을 main 질문 ID에 연결하거나 컬럼을 추가한다.
+- **교육과정 인덱싱**: 편성 학기를 함께 저장하도록 `python -m app.services.curriculum_search ieobom-ssu-corpus.zip`을 한 번 실행한다.
