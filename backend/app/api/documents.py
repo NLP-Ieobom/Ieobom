@@ -11,7 +11,6 @@ from app.models.analysis_job import AnalysisJob
 from app.models.course import Course
 from app.models.document import Document, DocumentStatus
 from app.models.document_page import DocumentPage
-from app.models.saved_question import SavedQuestion
 from app.models.user import User
 from app.models.user_note import UserNote
 from app.schemas.document import (
@@ -24,7 +23,6 @@ from app.schemas.document import (
     UploadUrlResponse,
 )
 from app.schemas.note import NoteResponse, NoteUpdateRequest
-from app.schemas.question import QuestionCreateRequest, QuestionResponse
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -198,32 +196,3 @@ def save_page_note(
     db.commit()
 
     return NoteResponse(document_id=document.id, page_number=page_number, content=note.content)
-
-
-@router.post("/{document_id}/pages/{page_number}/questions", response_model=QuestionResponse, status_code=201)
-def save_question(
-    document_id: uuid.UUID,
-    page_number: int,
-    payload: QuestionCreateRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> QuestionResponse:
-    document = _get_owned_document(db, document_id, current_user)
-
-    page = db.query(DocumentPage).filter_by(document_id=document.id, page_number=page_number).first()
-    if page is None:
-        page = DocumentPage(document_id=document.id, page_number=page_number)
-        db.add(page)
-        db.flush()  # question의 document_page_id로 쓰려면 먼저 id가 있어야 한다
-
-    question = SavedQuestion(document_page_id=page.id, content=payload.content)
-    db.add(question)
-    db.commit()
-
-    return QuestionResponse(
-        id=question.id,
-        document_id=document.id,
-        page_number=page_number,
-        content=question.content,
-        created_at=question.created_at,
-    )
