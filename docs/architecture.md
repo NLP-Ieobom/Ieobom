@@ -121,6 +121,8 @@ LLM 출력이 스키마에 안 맞는 경우)는 `scheduled_at`을 뒤로 밀어
 
 구현하면서 바뀔 테니 전체 스키마 대신 덩어리와 관계만 적는다.
 
+커리큘럼 선택과 수강 지도는 프론트 화면 작업 전까지 보류한다. [구현 계획](curriculum-plan.md)을 참고한다.
+
 **교육과정 쪽(공용)** — `curriculum`, `course`, `course_relation`, `course_concept`,
 `syllabus`, `course_alias`. 관리자가 등록하고 모든 학생이 공유한다.
 

@@ -53,19 +53,21 @@ services:
         condition: service_healthy
     env_file:
       - .env
-    # docker.sock을 공유해서 host에 떠 있는 docling 체크 이미지를 그대로 실행한다.
+    # docker.sock을 공유해서 host의 docling 이미지를 실행한다.
     # bind mount 경로는 host 기준이라 워커 자신도 같은 호스트 디렉터리를 입출력 경로로 마운트해 둔다.
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./docling/input:/work/input
       - ./docling/output:/work/output
 
-  # 기본 셋업만. 페이지 범위·OCR 같은 분석 파라미터 튜닝은 범위 밖.
+  # 워커와 같은 버전의 추출 코드를 별도 CPU 이미지에서 실행한다.
   docling:
-    image: ieobom-docling-check:local
+    image: ieobom-docling:local
     build:
       context: ./docling
       dockerfile: Dockerfile.docling
+      args:
+        BACKEND_IMAGE: ${ECR_REGISTRY}/ieobom-backend:${IMAGE_TAG}
     profiles: ["tools"]
     init: true
     cpus: "1.0"

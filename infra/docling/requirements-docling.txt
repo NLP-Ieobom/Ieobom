@@ -3,5 +3,5 @@
 docling==2.150.0
 torch==2.15.0
 torchvision==0.29.2
-# docling_check.py를 --ocr로 돌릴 때만 쓴다.
+# --ocr로 한국어·영어 스캔을 추출할 때 쓴다.
 easyocr==1.7.2

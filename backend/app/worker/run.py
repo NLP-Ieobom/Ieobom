@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import time
@@ -40,8 +41,7 @@ def finish_job(db, job_id, status: str) -> None:
     db.commit()
 
 
-def run_docling(pdf_path: Path) -> bool:
-    # 세부 파이프라인(페이지 범위, OCR 등)은 범위 밖. 일단 전체 페이지를 기본값으로 돌린다.
+def run_docling(pdf_path: Path, output_path: Path, document_id) -> bool:
     cmd = [
         "docker", "run", "--rm",
         "--cpus", "1.0", "--memory", "4g", "--memory-swap", "4g",
@@ -49,21 +49,26 @@ def run_docling(pdf_path: Path) -> bool:
         "-v", f"{DOCLING_HOST_DIR}/input:/work/input:ro",
         "-v", f"{DOCLING_HOST_DIR}/output:/work/output",
         "-v", "ieobom_docling_cache:/root/.cache",
-        "ieobom-docling-check:local",
-        f"/work/input/{pdf_path.name}", "--all-pages",
+        "ieobom-docling:local",
+        "extract", f"/work/input/{pdf_path.name}",
+        "--output", str(output_path), "--document-id", str(document_id),
     ]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
     print(result.stdout, flush=True)
     if result.returncode != 0:
         print(result.stderr, flush=True)
-    return result.returncode == 0
+        return False
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    # CLI는 검토용 부분 결과도 남기지만 워커는 완전한 추출만 성공으로 처리한다.
+    return not any(warning["code"] == "partial_conversion" for warning in payload["warnings"])
 
 
 def process(db, job_id, document_id) -> None:
     document = db.execute(text("SELECT s3_key FROM document WHERE id = :id"), {"id": document_id}).first()
     pdf_path = INPUT_DIR / f"{document_id}.pdf"
     s3.download_file(document.s3_key, pdf_path)
-    ok = run_docling(pdf_path)
+    output_path = Path("/work/output") / f"{job_id}.json"
+    ok = run_docling(pdf_path, output_path, document_id)
     finish_job(db, job_id, "succeeded" if ok else "failed")
 
 
