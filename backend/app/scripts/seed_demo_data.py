@@ -2,6 +2,7 @@ import os
 import sys
 
 from app.db.session import SessionLocal
+from app.models import course  # noqa: F401  # Document/UserCourse의 course_id FK가 가리키는 테이블을 등록하려고 import
 from app.models.document import Document, DocumentStatus
 from app.models.document_page import DocumentPage
 from app.models.question import Question

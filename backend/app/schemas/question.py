@@ -15,6 +15,7 @@ class QuestionResponse(BaseModel):
     learning_order: str
     first_activity: str
     created_at: datetime
+    is_saved: bool
 
 
 class QuestionListResponse(BaseModel):

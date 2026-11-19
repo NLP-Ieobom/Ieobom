@@ -11,6 +11,8 @@ from app.models.analysis_job import AnalysisJob
 from app.models.course import Course
 from app.models.document import Document, DocumentStatus
 from app.models.document_page import DocumentPage
+from app.models.question import Question
+from app.models.saved_question import SavedQuestion
 from app.models.user import User
 from app.models.user_note import UserNote
 from app.schemas.document import (
@@ -23,6 +25,7 @@ from app.schemas.document import (
     UploadUrlResponse,
 )
 from app.schemas.note import NoteResponse, NoteUpdateRequest
+from app.schemas.question import QuestionListResponse, QuestionResponse
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -196,3 +199,42 @@ def save_page_note(
     db.commit()
 
     return NoteResponse(document_id=document.id, page_number=page_number, content=note.content)
+
+
+@router.get("/{document_id}/pages/{page_number}/questions", response_model=QuestionListResponse)
+def list_page_questions(
+    document_id: uuid.UUID,
+    page_number: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> QuestionListResponse:
+    document = _get_owned_document(db, document_id, current_user)
+
+    page = db.query(DocumentPage).filter_by(document_id=document.id, page_number=page_number).first()
+    questions = db.query(Question).filter_by(document_page_id=page.id).all() if page else []
+    saved_ids = (
+        {row[0] for row in db.query(SavedQuestion.question_id).filter(
+            SavedQuestion.question_id.in_([q.id for q in questions])
+        )}
+        if questions
+        else set()
+    )
+
+    return QuestionListResponse(
+        questions=[
+            QuestionResponse(
+                id=question.id,
+                document_id=document.id,
+                page_number=page_number,
+                question_type=question.question_type,
+                content=question.content,
+                recommended_reason=question.recommended_reason,
+                prerequisite=question.prerequisite,
+                learning_order=question.learning_order,
+                first_activity=question.first_activity,
+                created_at=question.created_at,
+                is_saved=question.id in saved_ids,
+            )
+            for question in questions
+        ]
+    )
