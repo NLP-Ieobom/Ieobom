@@ -8,6 +8,7 @@ from sqlalchemy import text
 
 from app.db.session import SessionLocal
 from app.integrations import s3
+from app.pipelines.document_analysis import analyze_document
 
 WORKER_ID = os.environ.get("WORKER_ID", "worker-1")
 POLL_INTERVAL_SEC = int(os.environ.get("WORKER_POLL_INTERVAL_SEC", "3"))
@@ -18,7 +19,8 @@ INPUT_DIR = Path("/work/input")
 
 CLAIM_SQL = text("""
     UPDATE analysis_job
-    SET status = 'running', locked_by = :worker_id, locked_at = now(), attempt = attempt + 1
+    SET status = 'running', stage = 'downloading', completed_pages = NULL, total_pages = NULL,
+        locked_by = :worker_id, locked_at = now(), attempt = attempt + 1
     WHERE id = (
         SELECT id FROM analysis_job
         WHERE status = 'pending' AND scheduled_at <= now()
@@ -36,12 +38,28 @@ def claim_job(db):
     return row
 
 
-def finish_job(db, job_id, status: str) -> None:
-    db.execute(text("UPDATE analysis_job SET status = :status WHERE id = :id"), {"status": status, "id": job_id})
+def finish_job(db, job_id, status: str, stage: str | None = None) -> None:
+    db.execute(
+        text("UPDATE analysis_job SET status = :status, stage = COALESCE(:stage, stage) WHERE id = :id"),
+        {"status": status, "stage": stage, "id": job_id},
+    )
     db.commit()
 
 
-def run_docling(pdf_path: Path, output_path: Path, document_id) -> bool:
+def set_job_stage(db, job_id, stage: str, completed_pages=None, total_pages=None) -> None:
+    db.execute(
+        text("""
+            UPDATE analysis_job
+            SET stage = :stage, completed_pages = :completed_pages, total_pages = :total_pages
+            WHERE id = :id
+        """),
+        {"stage": stage, "completed_pages": completed_pages, "total_pages": total_pages, "id": job_id},
+    )
+    # 별도 API 세션의 폴링에서도 현재 단계를 읽을 수 있어야 한다.
+    db.commit()
+
+
+def run_docling(pdf_path: Path, output_path: Path, document_id) -> dict | None:
     cmd = [
         "docker", "run", "--rm",
         "--cpus", "1.0", "--memory", "4g", "--memory-swap", "4g",
@@ -57,19 +75,31 @@ def run_docling(pdf_path: Path, output_path: Path, document_id) -> bool:
     print(result.stdout, flush=True)
     if result.returncode != 0:
         print(result.stderr, flush=True)
-        return False
+        return None
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     # CLI는 검토용 부분 결과도 남기지만 워커는 완전한 추출만 성공으로 처리한다.
-    return not any(warning["code"] == "partial_conversion" for warning in payload["warnings"])
+    if any(warning["code"] == "partial_conversion" for warning in payload["warnings"]):
+        return None
+    return payload
 
 
 def process(db, job_id, document_id) -> None:
     document = db.execute(text("SELECT s3_key FROM document WHERE id = :id"), {"id": document_id}).first()
     pdf_path = INPUT_DIR / f"{document_id}.pdf"
     s3.download_file(document.s3_key, pdf_path)
+    set_job_stage(db, job_id, "extracting")
     output_path = Path("/work/output") / f"{job_id}.json"
-    ok = run_docling(pdf_path, output_path, document_id)
-    finish_job(db, job_id, "succeeded" if ok else "failed")
+    extraction = run_docling(pdf_path, output_path, document_id)
+    if extraction is None:
+        finish_job(db, job_id, "failed")
+        return
+    db.execute(
+        text("UPDATE document SET page_count = :page_count WHERE id = :id"),
+        {"page_count": len(extraction["pages"]), "id": document_id},
+    )
+    set_job_stage(db, job_id, "analyzing", completed_pages=0, total_pages=len(extraction["pages"]))
+    analyze_document(extraction)
+    finish_job(db, job_id, "succeeded", stage="analysis_skipped")
 
 
 def main() -> None:
@@ -86,6 +116,7 @@ def main() -> None:
                 process(db, claimed.id, claimed.document_id)
             except Exception as error:
                 print(f"job {claimed.id} failed: {error}", flush=True)
+                db.rollback()
                 finish_job(db, claimed.id, "failed")
         finally:
             db.close()

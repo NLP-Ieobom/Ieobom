@@ -57,6 +57,39 @@ python -m backend.app.pipelines.pdf_extraction overlay lecture.pdf tmp/extractio
 
 Python 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...), document_id=...)`다. 워커는 같은 코드의 CLI를 별도 Docling 컨테이너에서 실행하고 `/work/output/{job_id}.json`에 결과를 남긴다. DB 저장은 아직 연결되지 않았다. 현재 테이블과 저장 제안은 [DB 저장 검토](storage.md)에 정리했다. 강의계획서 예시는 수집·검수 단계에서 채울 데이터 형식을 보여 준다.
 
+### 진행 상태 조회
+
+프론트는 기존 `GET /api/v1/documents/{document_id}/status`를 2~3초 간격으로 조회한다. `job_status`가 `succeeded` 또는 `failed`이면 폴링을 멈춘다. 조회 요청이 분석을 실행하거나 새 잡을 만들지는 않는다.
+
+기존 `document_id`, `status`, `job_status`에 `stage`, `completed_pages`, `total_pages`, `stage_progress_percent`를 추가했다. 업로드 완료 전에는 `status = pending_upload`, `job_status = null`, `stage = uploading`이다. S3 업로드 퍼센트는 서버가 아니라 브라우저에서 전송한 바이트로 계산한다.
+
+| stage | 의미 |
+| --- | --- |
+| `uploading` | PDF 업로드 완료 확인 전 |
+| `queued` | 워커 처리 대기 |
+| `downloading` | 워커가 S3에서 PDF를 받는 중 |
+| `extracting` | Docling 추출 중 |
+| `analyzing` | 추출 JSON을 분석 함수에 전달한 상태 |
+| `analysis_skipped` | 빈 분석 함수 실행 종료. 질문 생성은 생략됨 |
+
+단계 변경은 DB에 커밋하므로 API의 별도 세션에서도 읽을 수 있다. 실패 시 `job_status = failed`로 바꾸고 실패한 `stage`는 유지한다. 단계 기록이 없던 기존 잡은 새 필드가 `null`이다.
+
+```json
+{
+  "document_id": "6f3df340-e4e6-43b4-9fe0-a03d2b205099",
+  "status": "uploaded",
+  "job_status": "succeeded",
+  "stage": "analysis_skipped",
+  "completed_pages": 0,
+  "total_pages": 24,
+  "stage_progress_percent": null
+}
+```
+
+위는 새 워커로 24쪽 PDF를 처리했을 때의 응답 예다. `total_pages`는 Docling 추출 완료 후 채운다. `completed_pages`는 분석 완료 페이지 수이며, 빈 분석에서는 0이다. `analyzing` 단계에서만 두 값으로 해당 단계의 퍼센트를 계산한다. 현재 Docling은 중간 완료 페이지 수를 전달하지 않으므로 `extracting`의 페이지 수와 퍼센트는 `null`이다. 전체 작업의 예상 퍼센트나 남은 시간을 뜻하지 않는다.
+
+`document_analysis.analyze_document()`는 지금은 `[]`만 반환한다. Gemini를 호출하지 않으며 이 반환값을 파일이나 DB에 저장하지 않는다. 워커는 `succeeded / analysis_skipped`로 종료하므로 프론트도 질문 생성 완료로 표시하지 않는다. 빈 함수는 즉시 끝나서 폴링 사이에 `analyzing` 단계를 지나갈 수 있다. 화면에 모든 중간 상태가 반드시 보이도록 실행을 지연시키지는 않는다.
+
 ### Docling 실행 설정
 
 `pdf_extraction.py`에서 Docling 2.150.0의 `PdfPipelineOptions`를 설정한다. CPU 1스레드를 사용하고 레이아웃·표·OCR 배치 크기, 단계 사이 큐, PDF 파서의 선행 페이지 버퍼를 각각 1로 둔다. 표는 `ACCURATE` 모드와 셀 매칭을 사용한다. OCR은 기본으로 끈다.

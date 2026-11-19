@@ -10,9 +10,12 @@ from app.db.base import Base
 from app.models import (  # noqa: F401  # 모델을 Base.metadata에 등록하려고 import
     analysis_job,
     course,
+    course_relation,
+    curriculum,
     document,
     document_page,
     question,
+    reading_progress,
     refresh_token,
     saved_question,
     user,

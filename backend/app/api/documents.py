@@ -2,6 +2,8 @@ import os
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
@@ -12,6 +14,7 @@ from app.models.course import Course
 from app.models.document import Document, DocumentStatus
 from app.models.document_page import DocumentPage
 from app.models.question import Question
+from app.models.reading_progress import UserDocumentProgress, UserPageView
 from app.models.saved_question import SavedQuestion
 from app.models.user import User
 from app.models.user_note import UserNote
@@ -26,6 +29,8 @@ from app.schemas.document import (
 )
 from app.schemas.note import NoteResponse, NoteUpdateRequest
 from app.schemas.question import QuestionListResponse, QuestionResponse
+from app.schemas.progress import DocumentProgressResponse, ProgressUpdateRequest
+from app.services.reading_progress import get_document_progress
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -50,6 +55,7 @@ def list_documents(
         .order_by(Document.created_at.desc())
         .all()
     )
+    progress = get_document_progress(db, current_user.id, documents)
     return DocumentListResponse(
         documents=[
             DocumentSummary(
@@ -57,6 +63,7 @@ def list_documents(
                 filename=document.original_filename,
                 status=document.status,
                 created_at=document.created_at,
+                reading_progress=progress[document.id],
             )
             for document in documents
         ]
@@ -139,10 +146,20 @@ def get_status(
         .order_by(AnalysisJob.created_at.desc())
         .first()
     )
+    stage = job.stage if job else None
+    if document.status == DocumentStatus.PENDING_UPLOAD.value:
+        stage = "uploading"
+    progress = None
+    if job and stage == "analyzing" and job.completed_pages is not None and job.total_pages:
+        progress = job.completed_pages * 100 // job.total_pages
     return StatusResponse(
         document_id=document.id,
         status=document.status,
         job_status=job.status if job else None,
+        stage=stage,
+        completed_pages=job.completed_pages if job else None,
+        total_pages=job.total_pages if job else None,
+        stage_progress_percent=progress,
     )
 
 
@@ -159,6 +176,49 @@ def get_file_url(
     expires_in = int(os.environ["S3_PRESIGNED_GET_EXPIRE"])
     file_url = s3.create_presigned_get_url(document.s3_key)
     return FileUrlResponse(file_url=file_url, expires_in=expires_in)
+
+
+@router.get("/{document_id}/progress", response_model=DocumentProgressResponse)
+def get_reading_progress(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> DocumentProgressResponse:
+    document = _get_owned_document(db, document_id, current_user)
+    progress = get_document_progress(db, current_user.id, [document])[document.id]
+    return DocumentProgressResponse(document_id=document.id, **progress.model_dump())
+
+
+@router.put("/{document_id}/progress", response_model=DocumentProgressResponse)
+def record_page_view(
+    document_id: uuid.UUID,
+    payload: ProgressUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> DocumentProgressResponse:
+    document = _get_owned_document(db, document_id, current_user)
+    if document.status != DocumentStatus.UPLOADED.value:
+        raise HTTPException(status_code=409, detail="document not uploaded yet")
+    if document.page_count is None:
+        raise HTTPException(status_code=409, detail="document page count not available yet")
+    if payload.page_number > document.page_count:
+        raise HTTPException(status_code=422, detail="page number exceeds document page count")
+
+    db.execute(insert(UserPageView).values(
+        user_id=current_user.id, document_id=document.id, page_number=payload.page_number,
+    ).on_conflict_do_nothing(
+        index_elements=[UserPageView.user_id, UserPageView.document_id, UserPageView.page_number],
+    ))
+    db.execute(insert(UserDocumentProgress).values(
+        user_id=current_user.id, document_id=document.id,
+        last_page_number=payload.page_number, last_viewed_at=func.clock_timestamp(),
+    ).on_conflict_do_update(
+        index_elements=[UserDocumentProgress.user_id, UserDocumentProgress.document_id],
+        set_={"last_page_number": payload.page_number, "last_viewed_at": func.clock_timestamp()},
+    ))
+    db.commit()
+    progress = get_document_progress(db, current_user.id, [document])[document.id]
+    return DocumentProgressResponse(document_id=document.id, **progress.model_dump())
 
 
 @router.get("/{document_id}/pages/{page_number}/note", response_model=NoteResponse)
