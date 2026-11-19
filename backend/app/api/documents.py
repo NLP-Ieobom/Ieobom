@@ -10,7 +10,10 @@ from app.integrations import s3
 from app.models.analysis_job import AnalysisJob
 from app.models.course import Course
 from app.models.document import Document, DocumentStatus
+from app.models.document_page import DocumentPage
+from app.models.saved_question import SavedQuestion
 from app.models.user import User
+from app.models.user_note import UserNote
 from app.schemas.document import (
     CompleteResponse,
     DocumentListResponse,
@@ -20,6 +23,8 @@ from app.schemas.document import (
     UploadUrlRequest,
     UploadUrlResponse,
 )
+from app.schemas.note import NoteResponse, NoteUpdateRequest
+from app.schemas.question import QuestionCreateRequest, QuestionResponse
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -153,3 +158,72 @@ def get_file_url(
     expires_in = int(os.environ["S3_PRESIGNED_GET_EXPIRE"])
     file_url = s3.create_presigned_get_url(document.s3_key)
     return FileUrlResponse(file_url=file_url, expires_in=expires_in)
+
+
+@router.get("/{document_id}/pages/{page_number}/note", response_model=NoteResponse)
+def get_page_note(
+    document_id: uuid.UUID,
+    page_number: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> NoteResponse:
+    document = _get_owned_document(db, document_id, current_user)
+    page = db.query(DocumentPage).filter_by(document_id=document.id, page_number=page_number).first()
+    note = db.query(UserNote).filter_by(document_page_id=page.id).first() if page else None
+    return NoteResponse(document_id=document.id, page_number=page_number, content=note.content if note else None)
+
+
+@router.put("/{document_id}/pages/{page_number}/note", response_model=NoteResponse)
+def save_page_note(
+    document_id: uuid.UUID,
+    page_number: int,
+    payload: NoteUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> NoteResponse:
+    document = _get_owned_document(db, document_id, current_user)
+
+    page = db.query(DocumentPage).filter_by(document_id=document.id, page_number=page_number).first()
+    if page is None:
+        page = DocumentPage(document_id=document.id, page_number=page_number)
+        db.add(page)
+        db.flush()  # note의 document_page_id로 쓰려면 먼저 id가 있어야 한다
+
+    note = db.query(UserNote).filter_by(document_page_id=page.id).first()
+    if note is None:
+        note = UserNote(document_page_id=page.id, content=payload.content)
+        db.add(note)
+    else:
+        note.content = payload.content
+    db.commit()
+
+    return NoteResponse(document_id=document.id, page_number=page_number, content=note.content)
+
+
+@router.post("/{document_id}/pages/{page_number}/questions", response_model=QuestionResponse, status_code=201)
+def save_question(
+    document_id: uuid.UUID,
+    page_number: int,
+    payload: QuestionCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> QuestionResponse:
+    document = _get_owned_document(db, document_id, current_user)
+
+    page = db.query(DocumentPage).filter_by(document_id=document.id, page_number=page_number).first()
+    if page is None:
+        page = DocumentPage(document_id=document.id, page_number=page_number)
+        db.add(page)
+        db.flush()  # question의 document_page_id로 쓰려면 먼저 id가 있어야 한다
+
+    question = SavedQuestion(document_page_id=page.id, content=payload.content)
+    db.add(question)
+    db.commit()
+
+    return QuestionResponse(
+        id=question.id,
+        document_id=document.id,
+        page_number=page_number,
+        content=question.content,
+        created_at=question.created_at,
+    )
