@@ -69,8 +69,9 @@ Python 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...),
 | `queued` | 워커 처리 대기 |
 | `downloading` | 워커가 S3에서 PDF를 받는 중 |
 | `extracting` | Docling 추출 중 |
-| `analyzing` | 추출 JSON을 분석 함수에 전달한 상태 |
-| `analysis_skipped` | 빈 분석 함수 실행 종료. 질문 생성은 생략됨 |
+| `analyzing` | Gemini 분석·질문 생성 중 |
+| `completed` | 질문 생성과 DB 저장 완료 |
+| `analysis_skipped` | Gemini 키가 없어 추출만 저장하고 질문 생성은 생략됨 |
 
 단계 변경은 DB에 커밋하므로 API의 별도 세션에서도 읽을 수 있다. 실패 시 `job_status = failed`로 바꾸고 실패한 `stage`는 유지한다. 단계 기록이 없던 기존 잡은 새 필드가 `null`이다.
 
@@ -79,16 +80,16 @@ Python 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...),
   "document_id": "6f3df340-e4e6-43b4-9fe0-a03d2b205099",
   "status": "uploaded",
   "job_status": "succeeded",
-  "stage": "analysis_skipped",
-  "completed_pages": 0,
+  "stage": "completed",
+  "completed_pages": 24,
   "total_pages": 24,
-  "stage_progress_percent": null
+  "stage_progress_percent": 100
 }
 ```
 
-위는 새 워커로 24쪽 PDF를 처리했을 때의 응답 예다. `total_pages`는 Docling 추출 완료 후 채운다. `completed_pages`는 분석 완료 페이지 수이며, 빈 분석에서는 0이다. `analyzing` 단계에서만 두 값으로 해당 단계의 퍼센트를 계산한다. 현재 Docling은 중간 완료 페이지 수를 전달하지 않으므로 `extracting`의 페이지 수와 퍼센트는 `null`이다. 전체 작업의 예상 퍼센트나 남은 시간을 뜻하지 않는다.
+위는 24쪽 PDF의 분석까지 끝났을 때의 응답 형식이다. `total_pages`는 Docling 추출 완료 후 채운다. `completed_pages`는 질문 제외 페이지도 포함한 분석 완료 페이지 수로, 3쪽 묶음마다 갱신한다. `analyzing`과 `completed`에서 페이지 수로 퍼센트를 계산한다. Docling은 중간 진행을 전달하지 않으므로 `extracting`의 페이지 수와 퍼센트는 `null`이다. 전체 작업의 예상 퍼센트나 남은 시간을 뜻하지 않는다.
 
-`document_analysis.analyze_document()`는 지금은 `[]`만 반환한다. Gemini를 호출하지 않으며 이 반환값을 파일이나 DB에 저장하지 않는다. 워커는 `succeeded / analysis_skipped`로 종료하므로 프론트도 질문 생성 완료로 표시하지 않는다. 빈 함수는 즉시 끝나서 폴링 사이에 `analyzing` 단계를 지나갈 수 있다. 화면에 모든 중간 상태가 반드시 보이도록 실행을 지연시키지는 않는다.
+Gemini 키가 없으면 `succeeded / analysis_skipped`, `completed_pages = 0`, 퍼센트는 `null`로 끝난다. 이때는 추출 원문과 페이지 수만 저장되며 질문 생성 완료로 표시하지 않는다. 일시적인 생성 오류로 재시도할 때는 `pending / queued`로 돌아간다. 저장된 추출을 재사용하고 생성 진행률은 다시 0부터 센다. 짧은 단계는 폴링 사이에 지나갈 수 있다.
 
 ### Docling 실행 설정
 
