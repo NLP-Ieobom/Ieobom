@@ -44,6 +44,9 @@ frontend/coverage/
 *.pdf
 !docs/**/*.pdf
 
+# ---------- 명령줄 생성기가 교육과정 ZIP 옆에 저장하는 과목 벡터 캐시 ----------
+*.vectors.json
+
 # ---------- Docling 기본 셋업 확인용 입출력 ----------
 infra/docling/input/*
 !infra/docling/input/.gitkeep

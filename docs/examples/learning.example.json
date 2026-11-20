@@ -1,0 +1,236 @@
+{
+  "schema_version": "1.0",
+  "document_id": "demo-normalization",
+  "pages": {
+    "1": {
+      "page_number": 1,
+      "analysis": {
+        "summary": "강의자료의 표지입니다.",
+        "concepts": [],
+        "coverage": "과목명과 자료 제목만 표시합니다.",
+        "question_eligible": false,
+        "exclusion_reason": "cover"
+      },
+      "questions": [],
+      "width_pt": 720.0,
+      "height_pt": 405.0,
+      "evidence_blocks": [
+        {
+          "block_id": "p1-b1",
+          "bbox": [
+            0.1,
+            0.2,
+            0.55,
+            0.3
+          ]
+        }
+      ],
+      "research_status": "ready"
+    },
+    "2": {
+      "page_number": 2,
+      "analysis": {
+        "summary": "갱신 이상을 줄이는 테이블 분해 예를 보여 줍니다.",
+        "concepts": [
+          {
+            "name": "함수 종속성",
+            "evidence_block_ids": [
+              "p2-b2"
+            ]
+          },
+          {
+            "name": "테이블 분해",
+            "evidence_block_ids": [
+              "p2-b2",
+              "p2-b3"
+            ]
+          }
+        ],
+        "coverage": "정규화의 목적과 분해 예를 설명합니다. 분해 이후의 조회 비용은 다루지 않습니다.",
+        "question_eligible": true,
+        "exclusion_reason": null
+      },
+      "questions": [
+        {
+          "type": "understand_flow",
+          "question": "테이블을 분해하면 왜 갱신 이상이 줄어들까요?",
+          "why_recommended": "정규화의 핵심 목적인 데이터 무결성 유지 원리를 이해하는 데 중요합니다. 이 질문을 통해 데이터 중복이 어떻게 이상 현상을 유발하는지 파악할 수 있습니다.",
+          "explanation": {
+            "headline": "데이터 중복을 제거하여 한 곳만 수정해도 전체 데이터가 일관성을 유지하기 때문입니다.",
+            "body": "원본 테이블에서는 과목 정보가 학생마다 반복되어, 과목의 강의실이 바뀔 때 모든 학생 행을 찾아 수정해야 하는 갱신 이상이 발생합니다. 테이블을 분해하면 과목 정보가 '개설' 테이블에만 존재하므로, 해당 행 하나만 수정하면 모든 학생에게 반영됩니다. 이는 데이터 중복을 최소화하여 논리적 일관성을 확보하는 과정입니다.",
+            "flow": [
+              "데이터 중복",
+              "갱신 이상 발생",
+              "테이블 분해",
+              "데이터 일관성 확보"
+            ]
+          },
+          "evidence_block_ids": [
+            "p2-b2",
+            "p2-b3"
+          ],
+          "prerequisites": [
+            "갱신 이상 — 데이터베이스의 삽입, 삭제, 갱신 시 발생하는 논리적 오류"
+          ],
+          "learning_steps": [
+            "원본 테이블에서 특정 속성값이 바뀔 때 수정해야 할 행의 개수를 세어 봅니다.",
+            "분해된 테이블에서 같은 속성을 수정할 때 필요한 작업량을 비교합니다."
+          ],
+          "first_activity": "종이에 '수강' 테이블을 그리고, 특정 과목의 강의실이 변경될 때 수정해야 하는 행들을 형광펜으로 표시해 보세요. 그 후 분해된 테이블에서 수정해야 할 행을 표시하여 작업량 차이를 확인해 보세요.",
+          "related_courses": [
+            {
+              "course_id": "9c4186bc-afab-4f7b-a27f-dfc298dad00b",
+              "reason": "이산수학의 '관계' 단원에서 다루는 집합 간의 대응과 함수 개념은 데이터베이스의 함수 종속성을 이해하는 기초가 됩니다. 테이블 분해 과정에서 속성 간의 종속 관계를 파악하는 논리적 사고를 기르는 데 도움을 줍니다.",
+              "next_topic": "관계의 성질과 함수 종속성. 관계의 반사성, 대칭성, 추이성 개념을 통해 데이터베이스의 함수 종속성 규칙을 다시 확인해 보세요.",
+              "name": "이산수학",
+              "relation": "previous",
+              "source": "ai_recommendation"
+            },
+            {
+              "course_id": "aa702d6a-4922-4a02-940e-62bcd97242ac",
+              "reason": "데이터베이스응용의 '정규화' 단원에서 테이블 분해를 직접적으로 다룹니다. 갱신 이상을 방지하기 위해 데이터를 어떻게 논리적으로 분리하고 관리하는지 실무적인 관점에서 학습합니다.",
+              "next_topic": "정규화의 단계별 적용. 제1정규형부터 제3정규형까지 각 단계에서 중복이 어떻게 제거되는지 확인해 보세요.",
+              "name": "데이터베이스응용",
+              "relation": "next",
+              "source": "ai_recommendation"
+            }
+          ],
+          "trends": [
+            {
+              "paper_id": "789b3d2f277639bfb8781b285e0ef410ea217f58",
+              "summary": "아파트 관리 업무의 수기 기록 방식에서 발생하는 비효율성과 부정확성 문제를 다룹니다. PostgreSQL 기반의 정규화된 데이터베이스 아키텍처인 'SocietySyncERP'를 설계하여 입주민 관리, 청구, 민원 추적 등의 기능을 자동화했습니다. 테스트 결과, 평균 2~20밀리초의 쿼리 응답 속도를 기록하며 높은 데이터 무결성과 성능을 입증했습니다.",
+              "title": "SocietySync ERP - A Normalized Relational Database Architecture for Residential Management",
+              "year": 2026,
+              "url": "https://www.semanticscholar.org/paper/789b3d2f277639bfb8781b285e0ef410ea217f58",
+              "searched_at": "2026-11-19T19:45:27.292329Z",
+              "source": "semantic_scholar"
+            },
+            {
+              "paper_id": "2ee945fe07eeab399c38873aaf734f927704b571",
+              "summary": "데이터베이스 관리 시스템(DBMS)에 대한 개념적 이해 부족 문제를 다룹니다. 400개 이상의 객관식 문제와 상세한 개념 설명을 통해 기초부터 고급 응용까지 체계적으로 학습할 수 있는 자원을 제공합니다. 이 책은 학생들이 단순 암기를 넘어 분석적 사고와 문제 해결 능력을 갖추도록 돕는 효과적인 학습 도구로 평가됩니다.",
+              "title": "DataVault Mastering Database Management Systems Through 400+ Concept-Based MCQs",
+              "year": 2026,
+              "url": "https://www.semanticscholar.org/paper/2ee945fe07eeab399c38873aaf734f927704b571",
+              "searched_at": "2026-11-19T19:45:27.292329Z",
+              "source": "semantic_scholar"
+            }
+          ]
+        },
+        {
+          "type": "apply",
+          "question": "테이블을 무조건 잘게 쪼개는 것이 항상 좋은 설계일까요?",
+          "why_recommended": "정규화의 장점뿐만 아니라 실제 구현 시 고려해야 할 트레이드오프를 고민하게 합니다. 이 질문을 통해 성능과 무결성 사이의 균형점을 생각할 수 있습니다.",
+          "explanation": {
+            "headline": "분해는 이상 현상을 방지하지만, 과도한 분해는 조회 시 조인 비용을 증가시킵니다.",
+            "body": "테이블을 분해하면 데이터 중복은 줄어들지만, 분해된 정보를 다시 합쳐서 보려면 조인(Join) 연산이 필수적입니다. 데이터베이스 설계에서는 갱신 이상을 방지하는 정규화와 빠른 조회를 위한 비정규화 사이에서 적절한 타협점을 찾아야 합니다. 강의에서는 분해의 논리적 이점만 다루었지만, 실제 환경에서는 조회 성능도 중요한 설계 요소입니다.",
+            "flow": [
+              "테이블 분해",
+              "조인 연산 발생",
+              "조회 성능 저하",
+              "설계 트레이드오프"
+            ]
+          },
+          "evidence_block_ids": [
+            "p2-b3"
+          ],
+          "prerequisites": [
+            "조인(Join) — 분해된 테이블을 다시 연결하는 연산"
+          ],
+          "learning_steps": [
+            "분해된 두 테이블을 다시 합치는 SQL 조인 문을 작성해 봅니다.",
+            "테이블이 10개로 쪼개졌을 때의 조인 복잡도를 상상해 봅니다."
+          ],
+          "first_activity": "강의의 '수강' 테이블을 예로 들어, 학생 이름과 강의실 정보를 동시에 출력하는 SQL 쿼리를 작성해 보세요. 조인이 필요한 상황을 직접 코드로 구현해 보는 것이 핵심입니다.",
+          "related_courses": [
+            {
+              "course_id": "aa702d6a-4922-4a02-940e-62bcd97242ac",
+              "reason": "데이터베이스응용의 '논리적 설계를 물리적 설계로 전환' 단원과 연결됩니다. 정규화된 모델이 실제 시스템에서 조회 성능에 미치는 영향을 고려하여 설계를 최적화하는 방법을 배웁니다.",
+              "next_topic": "반정규화(Denormalization). 성능 향상을 위해 분해된 테이블을 다시 합치거나 중복을 허용하는 전략을 확인해 보세요.",
+              "name": "데이터베이스응용",
+              "relation": "next",
+              "source": "ai_recommendation"
+            },
+            {
+              "course_id": "1158ce58-7415-4f55-80d0-df3e19b668eb",
+              "reason": "컴파일러의 '자료 구조' 및 '코드생성기' 단원과 연결됩니다. 데이터 구조의 복잡도가 연산 효율에 미치는 영향을 이해함으로써, 데이터베이스 설계 시 구조적 복잡성과 조회 성능 간의 트레이드오프를 분석하는 시각을 가질 수 있습니다.",
+              "next_topic": "데이터 구조와 접근 효율성. 자료 구조의 선택이 알고리즘 성능에 미치는 영향을 통해 데이터베이스 조인 비용의 원리를 확인해 보세요.",
+              "name": "컴파일러",
+              "relation": "next",
+              "source": "ai_recommendation"
+            }
+          ],
+          "trends": [
+            {
+              "paper_id": "a19a0a7ad8ec8ad070fd236769f39f24cc83219f",
+              "summary": "클라우드 기반 데이터베이스인 Oracle과 PostgreSQL의 쿼리 최적화 성능 차이 문제를 다룹니다. 다양한 워크로드 환경에서 실행 계획 힌트, 병렬 쿼리, 캐싱 설정 등을 비교 분석했습니다. 실험 결과, 최적화 기법 적용 시 쿼리 지연 시간이 크게 감소했으며, Postgres는 비용 효율성에서, Oracle은 고부하 환경의 확장성에서 강점을 보임을 확인했습니다.",
+              "title": "Performance Tuning for Cloud-Based Databases Oracle/Postgres: Analyzing Query Optimization Techniques",
+              "year": 2025,
+              "url": "https://www.semanticscholar.org/paper/a19a0a7ad8ec8ad070fd236769f39f24cc83219f",
+              "searched_at": "2026-11-19T19:45:29.500039Z",
+              "source": "semantic_scholar"
+            },
+            {
+              "paper_id": "81bc518aad63f0ef1e5dd05ff3cd21237b0d47f2",
+              "summary": "데이터 기반 애플리케이션의 증가에 따른 쿼리 실행 효율성 저하 문제를 다룹니다. 휴리스틱, 비용 기반, 의미 기반 최적화 등 기존 전략과 최신 AI/ML 기반의 적응형 최적화 기법을 체계적으로 검토했습니다. 연구 결과, 복잡한 워크로드 환경에서 데이터베이스가 지연 시간을 제한하고 자원을 효율적으로 사용하기 위해서는 지능적이고 탄력적인 동작이 필수적임을 확인했습니다.",
+              "title": "Review of Query Optimization Techniques in Database Management Systems",
+              "year": 2026,
+              "url": "https://www.semanticscholar.org/paper/81bc518aad63f0ef1e5dd05ff3cd21237b0d47f2",
+              "searched_at": "2026-11-19T19:45:29.500039Z",
+              "source": "semantic_scholar"
+            }
+          ]
+        }
+      ],
+      "width_pt": 720.0,
+      "height_pt": 405.0,
+      "evidence_blocks": [
+        {
+          "block_id": "p2-b1",
+          "bbox": [
+            0.1,
+            0.08,
+            0.32,
+            0.15
+          ]
+        },
+        {
+          "block_id": "p2-b2",
+          "bbox": [
+            0.1,
+            0.2,
+            0.85,
+            0.31
+          ]
+        },
+        {
+          "block_id": "p2-b3",
+          "bbox": [
+            0.1,
+            0.4,
+            0.55,
+            0.73
+          ]
+        },
+        {
+          "block_id": "p2-b4",
+          "bbox": [
+            0.59,
+            0.4,
+            0.9,
+            0.73
+          ]
+        }
+      ],
+      "research_status": "ready"
+    }
+  },
+  "follow_up": {
+    "page_number": 2,
+    "question": "정규화하면 조회 비용도 항상 줄어드나요?",
+    "explanation": "정규화는 데이터의 중복을 제거하여 갱신 이상을 방지하지만, 항상 조회 비용을 줄여주는 것은 아니며 오히려 성능이 저하될 수도 있습니다. 강의자료에서는: 함수 종속성을 고려해 테이블을 분해하면 갱신 이상을 줄일 수 있다고 설명합니다. 보충 설명: 정규화는 데이터를 여러 테이블로 나누기 때문에, 분해된 테이블에서 필요한 정보를 다시 합치려면 조인(Join) 연산이 필수적으로 발생합니다. 데이터가 많아질수록 조인 연산은 CPU와 메모리 자원을 많이 소모하며, 이는 단순 조회보다 더 큰 비용을 발생시킬 수 있습니다. 따라서 데이터의 무결성을 유지하는 정규화와 빠른 조회 속도를 위한 반정규화 사이에서 적절한 타협점을 찾는 것이 데이터베이스 설계의 핵심입니다. 예시: 학생과 과목 정보를 분리한 후, 특정 학생이 수강하는 과목의 강의실을 조회하려면 '수강' 테이블과 '개설' 테이블을 조인해야 합니다. SELECT * FROM 수강 JOIN 개설 ON 수강.과목 = 개설.과목 WHERE 학생 = '홍길동'; 이와 같이 테이블이 분리될수록 조인 횟수가 늘어나 조회 성능에 영향을 줄 수 있습니다. 더 공부하려면: '반정규화(Denormalization)'를 검색하여 성능 최적화를 위해 의도적으로 정규화를 해제하는 기법을 학습하세요. 또한 '조인 비용(Join Cost)'을 검색하여 데이터베이스 엔진이 조인을 처리할 때 발생하는 오버헤드에 대해 이해하는 것을 추천합니다.",
+    "evidence_block_ids": [
+      "p2-b2",
+      "p2-b3"
+    ]
+  }
+}

@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from app.schemas.learning import CourseLink, EvidenceBlock, Explanation, ResearchTrend
 
 
 class QuestionResponse(BaseModel):
@@ -16,6 +18,11 @@ class QuestionResponse(BaseModel):
     first_activity: str
     created_at: datetime
     is_saved: bool
+    evidence_block_ids: list[str] = Field(default_factory=list)
+    evidence_blocks: list[EvidenceBlock] = Field(default_factory=list)
+    explanation: Explanation | None = None
+    related_courses: list[CourseLink] = Field(default_factory=list)
+    trends: list[ResearchTrend] = Field(default_factory=list)
 
 
 class QuestionListResponse(BaseModel):

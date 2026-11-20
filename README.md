@@ -18,7 +18,7 @@
 ## 어떻게 동작하나
 
 PDF를 업로드하면 그 시점에 분석이 한 번 돈다. Docling으로 페이지 구조를 뽑고,
-Gemini로 개념과 요약을 추출한 다음, 슬라이드마다 질문 두세 개와 연결되는 후속 과목을 만든다.
+Gemini로 개념과 요약을 추출한 다음, 학습 내용이 있는 슬라이드마다 질문 두 개와 연결되는 과목을 만든다.
 과목에 동향 기능이 켜져 있으면 Semantic Scholar에서 관련 논문도 찾아 요약해 둔다.
 
 학생이 읽을 때는 저장된 결과를 그대로 보여 준다. AI를 다시 부르는 건 학생이 직접
@@ -55,8 +55,13 @@ PostgreSQL의 잡 테이블로만 주고받는다. 구조와 파이프라인은 
 
 ## 현재 상태
 
-디렉터리 골격과 설계 문서까지만 올라와 있다. 코드는 아직 없다.
-다음 작업은 부트스트랩 — FastAPI 앱, Vite 프로젝트, docker-compose로 DB까지 띄우는 것.
+PDF 업로드·Docling 추출·질문 생성·페이지별 조회와 질문 저장을 연결했다. 커리큘럼 지도,
+수강 상태, PDF 열람 진도 API도 제공한다. Gemini 키가 없으면 추출만 저장하고 분석은 생략한다.
+
+페이지별 분석은 `GET /api/v1/documents/{document_id}/pages/{page_number}/learning`,
+추가 질문은 같은 경로의 `POST /ask`를 사용한다. 기존 페이지 `/questions`, `/note`,
+문서 `/progress` API도 유지한다. [실행 방법](docs/learning.md)과
+[질문·해설 응답 형식](docs/learning-output.md)을 참고한다.
 
 ## 환경 변수
 

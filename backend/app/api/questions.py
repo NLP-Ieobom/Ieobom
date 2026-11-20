@@ -11,6 +11,7 @@ from app.models.question import Question
 from app.models.saved_question import SavedQuestion
 from app.models.user import User
 from app.schemas.question import QuestionListResponse, QuestionResponse
+from app.services.learning import add_enrollment_status
 
 router = APIRouter(prefix="/questions", tags=["questions"])
 
@@ -41,7 +42,7 @@ def list_saved_questions(
         .order_by(SavedQuestion.created_at.desc())
         .all()
     )
-    return QuestionListResponse(
+    response = QuestionListResponse(
         questions=[
             QuestionResponse(
                 id=question.id,
@@ -55,10 +56,17 @@ def list_saved_questions(
                 first_activity=question.first_activity,
                 created_at=question.created_at,
                 is_saved=True,
+                evidence_block_ids=question.evidence_block_ids,
+                evidence_blocks=question.evidence_blocks,
+                explanation=question.explanation,
+                related_courses=question.related_courses,
+                trends=question.trends,
             )
             for question, document_id, page_number in rows
         ]
     )
+    add_enrollment_status(db, current_user.id, response.questions)
+    return response
 
 
 @router.put("/{question_id}/save", status_code=204)

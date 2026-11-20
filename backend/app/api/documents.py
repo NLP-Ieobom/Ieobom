@@ -9,15 +9,19 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.integrations import s3
+from app.integrations.gemini import Gemini
+from app.integrations.learning_http import ProviderError
 from app.models.analysis_job import AnalysisJob
 from app.models.course import Course
 from app.models.document import Document, DocumentStatus
 from app.models.document_page import DocumentPage
+from app.models.learning import DocumentLearning
 from app.models.question import Question
 from app.models.reading_progress import UserDocumentProgress, UserPageView
 from app.models.saved_question import SavedQuestion
 from app.models.user import User
 from app.models.user_note import UserNote
+from app.pipelines.learning import answer_follow_up
 from app.schemas.document import (
     CompleteResponse,
     DocumentListResponse,
@@ -28,15 +32,19 @@ from app.schemas.document import (
     UploadUrlResponse,
 )
 from app.schemas.note import NoteResponse, NoteUpdateRequest
+from app.schemas.learning import AskRequest, FollowUpAnswer, StoredPageLearning
 from app.schemas.question import QuestionListResponse, QuestionResponse
 from app.schemas.progress import DocumentProgressResponse, ProgressUpdateRequest
 from app.services.reading_progress import get_document_progress
+from app.services.learning import add_enrollment_status
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
-def _get_owned_document(db: Session, document_id: uuid.UUID, user: User) -> Document:
-    document = db.get(Document, document_id)
+def _get_owned_document(
+    db: Session, document_id: uuid.UUID, user: User, *, lock: bool = False,
+) -> Document:
+    document = db.get(Document, document_id, with_for_update=lock)
     # 다른 사용자의 문서는 403이 아니라 404로 응답한다. 존재 여부를 노출하지 않는다.
     if document is None or document.user_id != user.id:
         raise HTTPException(status_code=404, detail="document not found")
@@ -113,7 +121,7 @@ def complete_upload(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> CompleteResponse:
-    document = _get_owned_document(db, document_id, current_user)
+    document = _get_owned_document(db, document_id, current_user, lock=True)
     if document.status != DocumentStatus.PENDING_UPLOAD.value:
         raise HTTPException(status_code=409, detail="already completed")
 
@@ -150,7 +158,7 @@ def get_status(
     if document.status == DocumentStatus.PENDING_UPLOAD.value:
         stage = "uploading"
     progress = None
-    if job and stage == "analyzing" and job.completed_pages is not None and job.total_pages:
+    if job and stage in {"analyzing", "completed"} and job.completed_pages is not None and job.total_pages:
         progress = job.completed_pages * 100 // job.total_pages
     return StatusResponse(
         document_id=document.id,
@@ -244,15 +252,17 @@ def save_page_note(
 ) -> NoteResponse:
     document = _get_owned_document(db, document_id, current_user)
 
-    page = db.query(DocumentPage).filter_by(document_id=document.id, page_number=page_number).first()
-    if page is None:
-        page = DocumentPage(document_id=document.id, page_number=page_number)
-        db.add(page)
-        db.flush()  # note의 document_page_id로 쓰려면 먼저 id가 있어야 한다
+    # 추출 워커도 페이지를 만들기 때문에 동시에 실행돼도 같은 페이지 ID를 쓴다.
+    page_id = db.execute(insert(DocumentPage).values(
+        document_id=document.id, page_number=page_number,
+    ).on_conflict_do_update(
+        index_elements=[DocumentPage.document_id, DocumentPage.page_number],
+        set_={"page_number": page_number},
+    ).returning(DocumentPage.id)).scalar_one()
 
-    note = db.query(UserNote).filter_by(document_page_id=page.id).first()
+    note = db.query(UserNote).filter_by(document_page_id=page_id).first()
     if note is None:
-        note = UserNote(document_page_id=page.id, content=payload.content)
+        note = UserNote(document_page_id=page_id, content=payload.content)
         db.add(note)
     else:
         note.content = payload.content
@@ -280,7 +290,7 @@ def list_page_questions(
         else set()
     )
 
-    return QuestionListResponse(
+    response = QuestionListResponse(
         questions=[
             QuestionResponse(
                 id=question.id,
@@ -294,7 +304,66 @@ def list_page_questions(
                 first_activity=question.first_activity,
                 created_at=question.created_at,
                 is_saved=question.id in saved_ids,
+                evidence_block_ids=question.evidence_block_ids,
+                evidence_blocks=question.evidence_blocks,
+                explanation=question.explanation,
+                related_courses=question.related_courses,
+                trends=question.trends,
             )
             for question in questions
         ]
     )
+    add_enrollment_status(db, current_user.id, response.questions)
+    return response
+
+
+@router.get("/{document_id}/pages/{page_number}/learning", response_model=StoredPageLearning)
+def get_page_learning(
+    document_id: uuid.UUID,
+    page_number: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> StoredPageLearning:
+    _get_owned_document(db, document_id, current_user)
+    learning = db.get(DocumentLearning, document_id)
+    if learning is None or learning.result is None:
+        raise HTTPException(status_code=404, detail="learning content not available")
+    page = learning.result["pages"].get(str(page_number))
+    if page is None:
+        raise HTTPException(status_code=404, detail="page not found")
+    response = StoredPageLearning.model_validate(page)
+    if response.questions:
+        saved_ids = {row[0] for row in db.query(SavedQuestion.question_id).filter(
+            SavedQuestion.question_id.in_([question.id for question in response.questions]),
+        )}
+        for question in response.questions:
+            question.is_saved = question.id in saved_ids
+    add_enrollment_status(db, current_user.id, response.questions)
+    return response
+
+
+@router.post("/{document_id}/pages/{page_number}/ask", response_model=FollowUpAnswer)
+def ask_about_page(
+    document_id: uuid.UUID,
+    page_number: int,
+    payload: AskRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> FollowUpAnswer:
+    _get_owned_document(db, document_id, current_user)
+    learning = db.get(DocumentLearning, document_id)
+    if learning is None or learning.result is None:
+        raise HTTPException(status_code=404, detail="learning content not available")
+    result = learning.result["pages"].get(str(page_number))
+    if result is None:
+        raise HTTPException(status_code=404, detail="page not found")
+    if not result["analysis"]["question_eligible"]:
+        raise HTTPException(status_code=409, detail="page has no eligible lecture content")
+    page = next(page for page in learning.extraction["pages"] if page["page_number"] == page_number)
+    db.rollback()  # 외부 호출을 기다리는 동안 조회 트랜잭션을 열어 두지 않는다.
+    if not os.environ.get("GEMINI_API_KEY", "").strip():
+        raise HTTPException(status_code=503, detail="follow-up questions are unavailable")
+    try:
+        return answer_follow_up(Gemini(), page, payload.question)
+    except ProviderError:
+        raise HTTPException(status_code=502, detail="could not generate a grounded answer") from None
