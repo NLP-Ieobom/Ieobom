@@ -6,7 +6,42 @@
 숭실대 AI소프트웨어학부 교육과정을 기준으로 한다. 2025-2학기 자연언어처리 팀 프로젝트.
 
 > **`making_question` 브랜치**는 탐구 질문 생성, 연구 동향, 후속 학습 방향(이어서 볼 과목)을 맡는다.
-> 서버에 합칠 때 필요한 코드 구성과 입출력은 아래 [이 브랜치의 코드 구성과 입출력](#이-브랜치의-코드-구성과-입출력)에 정리했다.
+> 프런트 연결은 [필요한 API 2개](#프런트에서-호출할-api-2개)와 [화면에 넣을 결과 JSON](#화면에-넣을-결과-json)부터 확인하면 된다.
+
+## 프런트에서 호출할 API 2개
+
+PDF 뷰어의 문서 ID와 **원본 PDF 쪽 번호(1부터 시작)**를 사용한다. 두 API에 기존 로그인 토큰을 `Authorization: Bearer <access_token>`으로 보낸다.
+
+| 언제 호출하나 | API | 응답 |
+| --- | --- | --- |
+| 슬라이드를 열거나 쪽을 바꿀 때 | `GET /api/v1/documents/{document_id}/pages/{page_number}/learning` | 해당 쪽의 저장된 분석·발견 질문·근거 좌표. **더 깊이 알아보기**도 여기서 받은 질문 데이터를 사용한다. |
+| 학생이 추가 질문을 보낼 때 | `POST /api/v1/documents/{document_id}/pages/{page_number}/ask` | Gemini가 만든 답변과 해당 쪽의 근거 블록 ID. |
+
+추가 질문의 요청 본문은 `{"question":"정규화하면 조회 비용도 항상 줄어드나요?"}`이고, 응답은 아래 형식이다. 프런트는 이 근거 ID를 이미 받아둔 쪽의 좌표에 연결할 수 있다.
+
+```json
+{
+  "explanation": "갱신 이상은 줄어들지만, 조회에 조인이 추가될 수 있습니다.",
+  "evidence_block_ids": ["p2-b2"]
+}
+```
+
+첫 조회가 분석 완료 전에 이루어지면 404가 올 수 있으므로 기존 문서 상태 API(`GET /api/v1/documents/{document_id}/status`)를 함께 사용한다. 표지처럼 제외된 쪽은 조회 결과의 `analysis.question_eligible`이 `false`이고 `questions`가 비어 있다. 이런 쪽에서는 추가 질문 버튼을 비활성화한다.
+
+## 화면에 넣을 결과 JSON
+
+프런트 개발 중에는 [실제 생성 예시 JSON](docs/examples/learning.example.json)에서 **`pages["2"]`**를 읽어 테스트할 수 있다. 이 객체가 **GET `/learning` 한 건의 응답**과 같은 구조다. 같은 예시 파일의 `follow_up`에는 추가 질문의 응답 필드와 함께 시험에 쓴 `page_number`, `question`이 들어 있다.
+
+| 구현한 기능 | 프런트가 읽을 필드 |
+| --- | --- |
+| **슬라이드 옆 발견 질문** | `questions[].question`, `type`, `why_recommended`로 카드 표시 |
+| **슬라이드 위 물음표와 근거 표시** | 선택한 질문의 `evidence_block_ids`를 이 쪽 `evidence_blocks[].block_id`와 매칭. 첫 근거 블록 옆에 물음표를 놓고 클릭하면 근거 블록 전체를 강조한다. `bbox`는 좌상단 기준 0~1 좌표 `[left, top, right, bottom]`이다. |
+| **더 깊이 알아보기** | 선택한 질문의 `explanation.headline`, `body`, `flow`로 해설 표시. `prerequisites`, `learning_steps`, `first_activity`로 선행 개념·학습 순서·첫 활동 표시 |
+| **이어서 볼 과목** | 선택한 질문의 `related_courses[]`에서 과목명·추천 이유·다음 주제 표시. `relation`으로 앞 학기(`previous`)와 뒤 학기(`next`)를 구분한다. 편성 학기가 확인되지 않으면 `related`가 반환되며, `source`로 AI 추천임을 표시한다. |
+| **연구 동향** | 선택한 질문의 `trends[]`에서 제목·요약·링크 표시. `source: "semantic_scholar"`는 논문 검색 결과, `source: "gemini"`는 AI가 정리한 연구 방향으로 표시한다. |
+| **추가 질문 답변** | POST 응답의 `explanation`과 `evidence_block_ids`로 답변과 원문 근거 표시 |
+
+과목 추천과 연구 동향은 **질문마다** 달라서 `questions[]` 안에 있다. 관련 결과가 없으면 빈 배열이 반환된다. 쪽의 `research_status`로 기능이 꺼졌는지(`disabled`), 준비됐는지(`ready`), 조회에 실패했는지(`unavailable`)를 구분한다. [전체 필드와 예시](docs/learning-output.md)
 
 ## 왜 만드나
 
@@ -54,8 +89,8 @@ PostgreSQL의 잡 테이블로만 주고받는다. 구조와 파이프라인은 
 
 ## 현재 상태
 
-디렉터리 골격과 설계 문서까지만 올라와 있다. 코드는 아직 없다.
-다음 작업은 부트스트랩 — FastAPI 앱, Vite 프로젝트, docker-compose로 DB까지 띄우는 것.
+이 브랜치에 페이지별 학습 결과 생성과 조회, 학생의 추가 질문 API가 구현돼 있다.
+프런트 연동에 사용할 API와 예시 응답은 위 섹션에서 확인할 수 있다.
 
 ## 환경 변수
 
