@@ -5,12 +5,15 @@ from types import SimpleNamespace
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
+from pydantic import ValidationError
+
 from app.integrations.learning_http import ProviderError
 from app.pipelines.docling_output import _pages
 from app.models.learning import CourseLearningProfile, CourseResearchCache
 from app.pipelines.learning import answer_follow_up, generate_learning
 from app.schemas.learning import (
-    FollowUpAnswer, PageDrafts, PageSelections, PaperSummaries, ResearchDirections, ResearchQueries,
+    AskRequest, FollowUpAnswer, PageDrafts, PageSelections, PaperSummaries, ResearchDirections,
+    ResearchQueries,
 )
 
 
@@ -287,6 +290,7 @@ class LearningContractTest(TestCase):
             evidence_block_ids=["p2-b1"],
         )
         answer = answer_follow_up(self.gemini, page, question)
+        self.assertEqual(answer.answer_status, "answered")
         self.assertEqual(answer.evidence_block_ids, ["p2-b1"])
         payload = self.gemini.generate.call_args.args[1]
         self.assertEqual(payload["question"], question)
@@ -294,6 +298,82 @@ class LearningContractTest(TestCase):
         self.gemini.generate.return_value.evidence_block_ids = ["p1-b1"]
         with self.assertRaisesRegex(ProviderError, "Invalid or duplicate answer evidence"):
             answer_follow_up(self.gemini, page, question)
+
+    def test_chat_request_trims_history_and_limits_context_size(self):
+        request = AskRequest(
+            question="  그럼 어떻게 비교하나요?  ",
+            history=[
+                {"question": f"  질문 {number}  ", "answer": f"  답변 {number}  "}
+                for number in range(1, 4)
+            ],
+        )
+        self.assertEqual(request.question, "그럼 어떻게 비교하나요?")
+        self.assertEqual(
+            [exchange.model_dump() for exchange in request.history],
+            [{"question": f"질문 {number}", "answer": f"답변 {number}"} for number in range(1, 4)],
+        )
+        self.assertEqual(AskRequest(question="안녕").history, [])
+        for invalid in (
+            {"question": " "},
+            {"question": "q" * 1001},
+            {"question": "질문", "history": [{"question": "질문", "answer": "답변"}] * 4},
+            {"question": "질문", "history": [{"question": " ", "answer": "답변"}]},
+            {"question": "질문", "history": [{"question": "q" * 1001, "answer": "답변"}]},
+            {"question": "질문", "history": [{"question": "질문", "answer": " "}]},
+            {"question": "질문", "history": [{"question": "질문", "answer": "a" * 3001}]},
+        ):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(ValidationError):
+                    AskRequest.model_validate(invalid)
+
+    def test_follow_up_passes_history_without_expanding_page_evidence(self):
+        request = AskRequest(
+            question="그 내용이 여기에도 있나요?",
+            history=[{"question": "이전 페이지의 근거는?", "answer": "p1-b1을 살펴보세요."}],
+        )
+        page = self.extraction["pages"][1]
+        self.gemini.generate.return_value = FollowUpAnswer(
+            explanation="현재 페이지는 함수 종속성과 분해를 다룹니다.",
+            evidence_block_ids=["p2-b1"],
+        )
+        answer_follow_up(self.gemini, page, request.question, request.history)
+        payload = self.gemini.generate.call_args.args[1]
+        self.assertEqual(payload["question"], request.question)
+        self.assertEqual(payload["history"], [
+            {"question": "이전 페이지의 근거는?", "answer": "p1-b1을 살펴보세요."},
+        ])
+        self.assertEqual(payload["page"]["page_number"], 2)
+        self.gemini.generate.return_value.evidence_block_ids = ["p1-b1"]
+        with self.assertRaisesRegex(ProviderError, "Invalid or duplicate answer evidence"):
+            answer_follow_up(self.gemini, page, request.question, request.history)
+
+    def test_follow_up_accepts_conversation_and_insufficient_evidence_without_citations(self):
+        for status, question, explanation in (
+            ("conversation", "안녕", "안녕하세요. 함께 살펴볼 내용이 있나요?"),
+            ("insufficient_evidence", "교수님 연구실은 어디인가요?", "현재 페이지에서 확인할 수 없습니다."),
+        ):
+            with self.subTest(status=status):
+                self.gemini.generate.return_value = FollowUpAnswer(
+                    answer_status=status, explanation=explanation, evidence_block_ids=[],
+                )
+                answer = answer_follow_up(self.gemini, self.extraction["pages"][1], question)
+                self.assertEqual(answer.answer_status, status)
+                self.assertEqual(answer.explanation, explanation)
+                self.assertEqual(answer.evidence_block_ids, [])
+                self.assertEqual(self.gemini.generate.call_args.args[1]["history"], [])
+
+    def test_follow_up_status_requires_corresponding_evidence(self):
+        for status, evidence in (
+            ("answered", []),
+            ("conversation", ["p2-b1"]),
+            ("insufficient_evidence", ["p2-b1"]),
+            ("unknown", []),
+        ):
+            with self.subTest(status=status, evidence=evidence):
+                with self.assertRaises(ValidationError):
+                    FollowUpAnswer(
+                        answer_status=status, explanation="응답", evidence_block_ids=evidence,
+                    )
 
     def test_converts_docling_bottom_left_coordinates_and_charspan(self):
         batch = {
