@@ -61,7 +61,9 @@ Python 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...),
 
 프론트는 기존 `GET /api/v1/documents/{document_id}/status`를 2~3초 간격으로 조회한다. `job_status`가 `succeeded` 또는 `failed`이면 폴링을 멈춘다. 조회 요청이 분석을 실행하거나 새 잡을 만들지는 않는다.
 
-기존 `document_id`, `status`, `job_status`에 `stage`, `completed_pages`, `total_pages`, `stage_progress_percent`를 추가했다. 업로드 완료 전에는 `status = pending_upload`, `job_status = null`, `stage = uploading`이다. S3 업로드 퍼센트는 서버가 아니라 브라우저에서 전송한 바이트로 계산한다.
+응답에는 문서·잡 상태, 단계, 페이지 진행률과 함께 `attempt`, `error_code`, `error_message`,
+`next_retry_at`가 있다. 업로드 완료 전에는 `status = pending_upload`,
+`job_status = null`, `stage = uploading`이다. S3 업로드 퍼센트는 브라우저에서 전송한 바이트로 계산한다.
 
 | stage | 의미 |
 | --- | --- |
@@ -83,13 +85,33 @@ Python 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...),
   "stage": "completed",
   "completed_pages": 24,
   "total_pages": 24,
-  "stage_progress_percent": 100
+  "stage_progress_percent": 100,
+  "attempt": 1,
+  "error_code": null,
+  "error_message": null,
+  "next_retry_at": null
 }
 ```
 
 위는 24쪽 PDF의 분석까지 끝났을 때의 응답 형식이다. `total_pages`는 Docling 추출 완료 후 채운다. `completed_pages`는 질문 제외 페이지도 포함한 분석 완료 페이지 수로, 3쪽 묶음마다 갱신한다. `analyzing`과 `completed`에서 페이지 수로 퍼센트를 계산한다. Docling은 중간 진행을 전달하지 않으므로 `extracting`의 페이지 수와 퍼센트는 `null`이다. 전체 작업의 예상 퍼센트나 남은 시간을 뜻하지 않는다.
 
 Gemini 키가 없으면 `succeeded / analysis_skipped`, `completed_pages = 0`, 퍼센트는 `null`로 끝난다. 이때는 추출 원문과 페이지 수만 저장되며 질문 생성 완료로 표시하지 않는다. 일시적인 생성 오류로 재시도할 때는 `pending / queued`로 돌아간다. 저장된 추출을 재사용하고 생성 진행률은 다시 0부터 센다. 짧은 단계는 폴링 사이에 지나갈 수 있다.
+
+`attempt`는 워커가 실행한 횟수다. 최초 대기에는 0,
+실행을 시작할 때마다 1씩 증가한다. 자동 재시도 대기에서는 `next_retry_at`에 예약 시각을 주며
+폴링을 계속한다. 새 실행이 시작되면 이전 오류를 지운다. 오류 메시지에 외부 API의 원문 응답이나
+키를 담지 않는다. 프론트는 `job_status`를 먼저 확인하고 `error_code`로 실패 화면을 구분한다.
+
+| error_code | 의미 |
+| --- | --- |
+| `WORKER_INTERRUPTED` | 워커 갱신이 15분 동안 끊겨 작업을 회수함 |
+| `AI_TEMPORARY_ERROR` | 일시적인 생성 서비스 오류. 한도 내에서는 자동 재시도 |
+| `AI_REQUEST_FAILED` | 생성 요청 거절. 서버 설정 확인 필요 |
+| `AI_NOT_CONFIGURED` | Gemini 키가 없어 질문 생성 생략 |
+| `PDF_DOWNLOAD_FAILED` | S3 원본 다운로드 실패 |
+| `EXTRACTION_FAILED` | PDF 추출 실패 또는 부분 추출 |
+| `EXTRACTION_TIMEOUT` | PDF 추출 대기 시간 초과 |
+| `ANALYSIS_FAILED` | 그 외 분석 오류 |
 
 ### Docling 실행 설정
 

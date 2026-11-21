@@ -34,6 +34,10 @@ class StatusResponse(BaseModel):
     completed_pages: int | None
     total_pages: int | None
     stage_progress_percent: int | None
+    attempt: int
+    error_code: str | None
+    error_message: str | None
+    next_retry_at: datetime | None
 
 
 class FileUrlResponse(BaseModel):

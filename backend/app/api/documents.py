@@ -168,6 +168,10 @@ def get_status(
         completed_pages=job.completed_pages if job else None,
         total_pages=job.total_pages if job else None,
         stage_progress_percent=progress,
+        attempt=job.attempt if job else 0,
+        error_code=job.error_code if job else None,
+        error_message=job.error_message if job else None,
+        next_retry_at=job.scheduled_at if job and job.status == "pending" and job.attempt > 0 else None,
     )
 
 

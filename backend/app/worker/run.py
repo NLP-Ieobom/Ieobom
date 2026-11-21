@@ -6,6 +6,7 @@ from pathlib import Path
 from threading import Event, Thread
 from uuid import uuid4
 
+from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
@@ -33,7 +34,8 @@ INPUT_DIR = Path("/work/input")
 CLAIM_SQL = text("""
     UPDATE analysis_job
     SET status = 'running', stage = 'downloading', completed_pages = NULL, total_pages = NULL,
-        locked_by = :worker_id, locked_at = clock_timestamp(), attempt = attempt + 1
+        locked_by = :worker_id, locked_at = clock_timestamp(), attempt = attempt + 1,
+        error_code = NULL, error_message = NULL
     WHERE id = (
         SELECT id FROM analysis_job
         WHERE status = 'pending' AND scheduled_at <= now()
@@ -54,10 +56,11 @@ def recover_jobs(db) -> None:
         UPDATE analysis_job
         SET status = CASE WHEN attempt < :max_attempts THEN 'pending' ELSE 'failed' END,
             stage = CASE WHEN attempt < :max_attempts THEN 'queued' ELSE stage END,
-            scheduled_at = now(), locked_by = NULL, locked_at = NULL
+            scheduled_at = now(), locked_by = NULL, locked_at = NULL,
+            error_code = 'WORKER_INTERRUPTED', error_message = :message
         WHERE status = 'running'
           AND (locked_at IS NULL OR locked_at < clock_timestamp() - interval '15 minutes')
-    """), {"max_attempts": MAX_ATTEMPTS})
+    """), {"max_attempts": MAX_ATTEMPTS, "message": "분석 작업이 중단되었습니다. 다시 시도해 주세요."})
     db.commit()
 
 
@@ -99,15 +102,20 @@ def lock_job(db, job) -> None:
         raise JobLeaseLost()
 
 
-def finish_job(db, job, status: str, stage: str | None = None, delay: int = 0) -> None:
+def finish_job(
+    db, job, status: str, stage: str | None = None, delay: int = 0,
+    *, error_code: str | None = None, error_message: str | None = None,
+) -> None:
     lock_job(db, job)
     db.execute(text("""
         UPDATE analysis_job
         SET status = :status, stage = COALESCE(:stage, stage), locked_by = NULL, locked_at = NULL,
+            error_code = :error_code, error_message = :error_message,
             scheduled_at = CASE WHEN :delay > 0
                 THEN now() + :delay * interval '1 second' ELSE scheduled_at END
         WHERE id = :id
-    """), {"status": status, "stage": stage, "id": job.id, "delay": delay})
+    """), {"status": status, "stage": stage, "id": job.id, "delay": delay,
+           "error_code": error_code, "error_message": error_message})
     db.commit()
 
 
@@ -175,7 +183,8 @@ def process(db, job) -> None:
             pdf_path.unlink(missing_ok=True)
             output_path.unlink(missing_ok=True)
         if extraction is None:
-            finish_job(db, job, "failed")
+            finish_job(db, job, "failed", error_code="EXTRACTION_FAILED",
+                       error_message="PDF 내용을 추출하지 못했습니다. 원본 파일을 확인해 주세요.")
             return
         lock_job(db, job)
         extraction["source"]["filename"] = document.original_filename
@@ -192,7 +201,8 @@ def process(db, job) -> None:
     set_job_stage(db, job, "analyzing", completed_pages=0, total_pages=total_pages)
     if learning.result is None:
         if not os.environ.get("GEMINI_API_KEY", "").strip():
-            finish_job(db, job, "succeeded", stage="analysis_skipped")
+            finish_job(db, job, "succeeded", stage="analysis_skipped", error_code="AI_NOT_CONFIGURED",
+                       error_message="질문 생성 설정이 준비되지 않았습니다.")
             return
         course = db.get(Course, document.course_id)
 
@@ -234,17 +244,27 @@ def run_job(db, job) -> None:
         raise
     except ProviderError as error:
         db.rollback()
-        if error.retryable and job.attempt < MAX_ATTEMPTS:
-            delay = min(30 * 2 ** (job.attempt - 1), 600)
-            print(f"job {job.id} retrying in {delay}s: {error}", flush=True)
-            finish_job(db, job, "pending", stage="queued", delay=delay)
-        else:
-            print(f"job {job.id} failed: {error}", flush=True)
-            finish_job(db, job, "failed")
+        retry = error.retryable and job.attempt < MAX_ATTEMPTS
+        delay = min(30 * 2 ** (job.attempt - 1), 600) if retry else 0
+        print(f"job {job.id} provider failure: {error}", flush=True)
+        finish_job(db, job, "pending" if retry else "failed", stage="queued" if retry else None,
+                   delay=delay, error_code="AI_TEMPORARY_ERROR" if error.retryable else "AI_REQUEST_FAILED",
+                   error_message="질문 생성 서비스에서 응답을 받지 못했습니다. 잠시 후 다시 시도해 주세요."
+                   if error.retryable else "질문 생성 요청이 거절되었습니다. 서버 설정을 확인해 주세요.")
+    except (ClientError, BotoCoreError):
+        db.rollback()
+        finish_job(db, job, "failed", error_code="PDF_DOWNLOAD_FAILED",
+                   error_message="원본 PDF를 가져오지 못했습니다. 파일 저장 상태를 확인해 주세요.")
+    except subprocess.TimeoutExpired:
+        db.rollback()
+        finish_job(db, job, "failed", error_code="EXTRACTION_TIMEOUT",
+                   error_message="PDF 추출 시간이 초과되었습니다. 다시 시도해 주세요.")
     except Exception as error:
+        # 작업 하나의 실패가 워커 루프를 멈추지 않도록 하는 최상위 경계다.
         print(f"job {job.id} failed: {error}", flush=True)
         db.rollback()
-        finish_job(db, job, "failed")
+        finish_job(db, job, "failed", error_code="ANALYSIS_FAILED",
+                   error_message="분석 중 오류가 발생했습니다. 다시 시도해 주세요.")
 
 
 def main() -> None:
