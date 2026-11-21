@@ -47,7 +47,7 @@ docs/      설계 문서
 
 서버와 워커는 같은 코드를 공유하고 진입점만 다르다. 둘은 서로를 호출하지 않고
 PostgreSQL의 잡 테이블로만 주고받는다. 구조와 파이프라인은 [docs/architecture.md](docs/architecture.md),
-기술 선택 이유와 아직 정하지 못한 것들은 [docs/decisions.md](docs/decisions.md)에 적었다.
+전체 요청·응답과 프론트 연결 순서는 [API 명세](docs/api.md)에 적었다.
 
 ## 시연 데이터
 
@@ -58,16 +58,8 @@ PostgreSQL의 잡 테이블로만 주고받는다. 구조와 파이프라인은 
 PDF 업로드·Docling 추출·질문 생성·페이지별 조회와 질문 저장을 연결했다. 커리큘럼 지도,
 수강 상태, PDF 열람 진도 API도 제공한다. Gemini 키가 없으면 추출만 저장하고 분석은 생략한다.
 
-페이지별 분석은 `GET /api/v1/documents/{document_id}/pages/{page_number}/learning`,
-추가 질문은 같은 경로의 `POST /ask`를 사용한다. 기존 페이지 `/questions`, `/note`,
-문서 `/progress` API도 유지한다. [실행 방법](docs/learning.md)과
-[질문·해설 응답 형식](docs/learning-output.md)을 참고한다.
-
-PDF 전체 질문은 `GET /api/v1/documents/{document_id}/questions`로 조회한다.
-Bearer 인증과 문서 UUID만 필요하며 쿼리 파라미터와 요청 본문은 없다. 본인 문서의 질문을
-페이지 번호순으로 반환하고, 생성된 질문이 없으면 `200`과 `{"questions": []}`를 반환한다.
-없는 문서와 타인 문서는 `404`다. [응답 예시](docs/examples/document-questions.example.json)는
-두 페이지의 질문을 담고 있으며 UUID와 저장 표시는 예시 값이다.
+PDF 전체 질문 조회, 실패 정보·재시도, 중단 워커 복구, PDF 삭제도 제공한다.
+실제 과목·관계 데이터 등록과 챗봇 완성은 남아 있다.
 
 ## 환경 변수
 

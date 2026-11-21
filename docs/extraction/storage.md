@@ -32,7 +32,7 @@
 
 `/learning`과 기존 `/questions` 응답은 같은 질문 ID를 반환한다. 질문 저장 여부와 추천 과목의
 수강 상태는 조회 시점에 붙인다. GET 요청은 열람 진도를 변경하지 않으며, 진도 기록은 기존
-문서 `/progress` PUT을 사용한다. [응답 필드](../learning-output.md)
+문서 `/progress` PUT을 사용한다. [API 명세](../api.md#페이지-분석과-질문)
 
 Gemini 키가 없으면 추출과 페이지 수만 저장하고 `analysis_skipped`로 끝난다. 질문 생성까지
-끝나면 `completed`가 된다. [폴링 상태](README.md#진행-상태-조회)
+끝나면 `completed`가 된다. [폴링 상태](../api.md#분석-상태와-재시도)
