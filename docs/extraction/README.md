@@ -55,7 +55,7 @@ python -m backend.app.pipelines.pdf_extraction overlay lecture.pdf tmp/extractio
 - 질문이 가리키는 위치를 확인하려면 추출 JSON의 실제 `block_id`를 `--block-id`에 넘긴다. 여러 블록을 보려면 옵션을 반복한다. 해당 블록이 있는 페이지에 선택한 박스만 그린다. `--page`도 지정하면 모든 블록이 선택한 페이지 안에 있어야 한다. 두 옵션을 생략하면 전체 페이지의 박스를 그린다.
 - `warnings`를 먼저 보고, 이미지에서 본문·표·그림과 박스가 일치하는지 확인한다. 기하 정보가 맞지 않아 표시할 수 없는 PDF는 오류를 반환한다.
 
-Python 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...), document_id=...)`다. 워커는 같은 코드의 CLI를 별도 Docling 컨테이너에서 실행하고 `/work/output/{job_id}.json`에 결과를 남긴다. DB 저장은 아직 연결되지 않았다. 현재 테이블과 저장 제안은 [DB 저장 검토](storage.md)에 정리했다. 강의계획서 예시는 수집·검수 단계에서 채울 데이터 형식을 보여 준다.
+Python 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...), document_id=...)`다. 워커는 같은 코드의 CLI를 별도 Docling 컨테이너에서 실행한다. 실행마다 다른 임시 파일명을 쓰고 결과를 읽은 뒤 임시 PDF·JSON을 지운다. DB에는 [PDF 추출·질문 저장](storage.md)의 구조로 저장한다. 강의계획서 예시는 수집·검수 단계에서 채울 데이터 형식을 보여 준다.
 
 ### 진행 상태 조회
 
