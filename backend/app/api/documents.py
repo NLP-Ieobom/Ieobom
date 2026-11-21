@@ -2,9 +2,11 @@ import os
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path
+from botocore.exceptions import BotoCoreError, ClientError
+from fastapi import APIRouter, Depends, HTTPException, Path, Response
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
@@ -218,6 +220,33 @@ def retry_analysis(
     job.scheduled_at = func.now()
     db.commit()
     return RetryResponse(document_id=document.id, job_id=job.id, job_status=job.status)
+
+
+@router.delete("/{document_id}", status_code=204)
+def delete_document(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    document = _get_owned_document(db, document_id, current_user, lock=True)
+    active = db.query(AnalysisJob.id).filter(
+        AnalysisJob.document_id == document.id, AnalysisJob.status.in_(["pending", "running"]),
+    ).first()
+    if active:
+        raise HTTPException(status_code=409, detail="wait for analysis to finish before deleting")
+    try:
+        s3.delete_object(document.s3_key)
+    except (ClientError, BotoCoreError):
+        db.rollback()
+        raise HTTPException(status_code=503, detail="could not delete PDF from storage; retry later") from None
+    try:
+        # DB 외래키의 CASCADE로 질문·저장 표시·메모·진도·분석 결과를 한 번에 지운다.
+        db.delete(document)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(status_code=503, detail="could not finish document deletion; retry deletion") from None
+    return Response(status_code=204)
 
 
 @router.get("/{document_id}/file-url", response_model=FileUrlResponse)

@@ -19,7 +19,7 @@ class AnalysisJob(Base):
     __tablename__ = "analysis_job"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("document.id"))
+    document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("document.id", ondelete="CASCADE"))
     status: Mapped[str] = mapped_column(String(20), default=AnalysisJobStatus.PENDING.value)
     stage: Mapped[str | None] = mapped_column(String(30), default="queued", nullable=True)
     completed_pages: Mapped[int | None] = mapped_column(Integer, nullable=True)

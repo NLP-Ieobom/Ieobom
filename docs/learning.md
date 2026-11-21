@@ -22,8 +22,8 @@ python -m app.pipelines.learning_cli extraction.json -o learning.json --env-file
 
 ## 서비스 연결
 
-`alembic upgrade head`로 스키마를 먼저 적용한다. 현재 head는 `f18ac732de60`이며,
-분석 실패 정보를 저장하는 컬럼을 포함한다.
+`alembic upgrade head`로 스키마를 먼저 적용한다. 현재 head는 `b70ed429c183`이며,
+분석 실패 정보와 PDF 삭제에 필요한 외래키를 포함한다.
 워커는 공통 Docling 추출 JSON을 `generate_learning()`에 전달한다. 적격 페이지마다 질문 두 개를
 만들고, 3쪽 묶음이 끝날 때마다 상태 API에 진행 페이지 수를 기록한다. [저장 구조](extraction/storage.md)
 

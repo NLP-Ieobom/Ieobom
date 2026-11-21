@@ -35,6 +35,10 @@ def download_file(key: str, dest_path) -> None:
     _client.download_file(_bucket(), key, str(dest_path))
 
 
+def delete_object(key: str) -> None:
+    _client.delete_object(Bucket=_bucket(), Key=key)
+
+
 def head_object(key: str):
     """객체가 없으면 None. 그 외 에러는 그대로 올린다."""
     try:

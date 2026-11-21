@@ -13,7 +13,7 @@ class Question(Base):
     __tablename__ = "question"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    document_page_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("document_page.id"))
+    document_page_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("document_page.id", ondelete="CASCADE"))
     question_type: Mapped[str] = mapped_column(String(50))
     content: Mapped[str] = mapped_column(Text)
     recommended_reason: Mapped[str] = mapped_column(Text)
