@@ -27,6 +27,7 @@ from app.schemas.document import (
     DocumentListResponse,
     DocumentSummary,
     FileUrlResponse,
+    RetryResponse,
     StatusResponse,
     UploadUrlRequest,
     UploadUrlResponse,
@@ -171,8 +172,42 @@ def get_status(
         attempt=job.attempt if job else 0,
         error_code=job.error_code if job else None,
         error_message=job.error_message if job else None,
+        can_retry=bool(job and document.status == DocumentStatus.UPLOADED.value
+                       and (job.status == "failed" or (job.status == "succeeded" and job.stage == "analysis_skipped"))
+                       and os.environ.get("GEMINI_API_KEY", "").strip()),
         next_retry_at=job.scheduled_at if job and job.status == "pending" and job.attempt > 0 else None,
     )
+
+
+@router.post("/{document_id}/retry", response_model=RetryResponse, status_code=202)
+def retry_analysis(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> RetryResponse:
+    document = _get_owned_document(db, document_id, current_user, lock=True)
+    job = (db.query(AnalysisJob).filter_by(document_id=document.id)
+           .order_by(AnalysisJob.created_at.desc(), AnalysisJob.id.desc()).first())
+    if document.status != DocumentStatus.UPLOADED.value or job is None:
+        raise HTTPException(status_code=409, detail="document has no completed upload to retry")
+    if job.status != "failed" and not (job.status == "succeeded" and job.stage == "analysis_skipped"):
+        raise HTTPException(status_code=409, detail="analysis is active or already completed")
+    if not os.environ.get("GEMINI_API_KEY", "").strip():
+        raise HTTPException(status_code=503, detail="question generation is not configured")
+
+    # 같은 문서의 재시도 요청은 문서 행 잠금으로 직렬화한다. 기존 추출·메모·진도는 유지한다.
+    job.status = "pending"
+    job.stage = "queued"
+    job.attempt = 0
+    job.completed_pages = None
+    job.total_pages = None
+    job.error_code = None
+    job.error_message = None
+    job.locked_by = None
+    job.locked_at = None
+    job.scheduled_at = func.now()
+    db.commit()
+    return RetryResponse(document_id=document.id, job_id=job.id, job_status=job.status)
 
 
 @router.get("/{document_id}/file-url", response_model=FileUrlResponse)

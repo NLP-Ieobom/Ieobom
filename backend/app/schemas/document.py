@@ -37,7 +37,14 @@ class StatusResponse(BaseModel):
     attempt: int
     error_code: str | None
     error_message: str | None
+    can_retry: bool
     next_retry_at: datetime | None
+
+
+class RetryResponse(BaseModel):
+    document_id: uuid.UUID
+    job_id: uuid.UUID
+    job_status: str
 
 
 class FileUrlResponse(BaseModel):

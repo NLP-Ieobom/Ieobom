@@ -62,7 +62,7 @@ Python 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...),
 프론트는 기존 `GET /api/v1/documents/{document_id}/status`를 2~3초 간격으로 조회한다. `job_status`가 `succeeded` 또는 `failed`이면 폴링을 멈춘다. 조회 요청이 분석을 실행하거나 새 잡을 만들지는 않는다.
 
 응답에는 문서·잡 상태, 단계, 페이지 진행률과 함께 `attempt`, `error_code`, `error_message`,
-`next_retry_at`가 있다. 업로드 완료 전에는 `status = pending_upload`,
+`can_retry`, `next_retry_at`가 있다. 업로드 완료 전에는 `status = pending_upload`,
 `job_status = null`, `stage = uploading`이다. S3 업로드 퍼센트는 브라우저에서 전송한 바이트로 계산한다.
 
 | stage | 의미 |
@@ -89,6 +89,7 @@ Python 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...),
   "attempt": 1,
   "error_code": null,
   "error_message": null,
+  "can_retry": false,
   "next_retry_at": null
 }
 ```
@@ -97,7 +98,7 @@ Python 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...),
 
 Gemini 키가 없으면 `succeeded / analysis_skipped`, `completed_pages = 0`, 퍼센트는 `null`로 끝난다. 이때는 추출 원문과 페이지 수만 저장되며 질문 생성 완료로 표시하지 않는다. 일시적인 생성 오류로 재시도할 때는 `pending / queued`로 돌아간다. 저장된 추출을 재사용하고 생성 진행률은 다시 0부터 센다. 짧은 단계는 폴링 사이에 지나갈 수 있다.
 
-`attempt`는 워커가 실행한 횟수다. 최초 대기에는 0,
+`attempt`는 현재 수동 재시도 이후 워커가 실행한 횟수다. 최초 대기와 수동 재시도 직후에는 0,
 실행을 시작할 때마다 1씩 증가한다. 자동 재시도 대기에서는 `next_retry_at`에 예약 시각을 주며
 폴링을 계속한다. 새 실행이 시작되면 이전 오류를 지운다. 오류 메시지에 외부 API의 원문 응답이나
 키를 담지 않는다. 프론트는 `job_status`를 먼저 확인하고 `error_code`로 실패 화면을 구분한다.
@@ -112,6 +113,27 @@ Gemini 키가 없으면 `succeeded / analysis_skipped`, `completed_pages = 0`, �
 | `EXTRACTION_FAILED` | PDF 추출 실패 또는 부분 추출 |
 | `EXTRACTION_TIMEOUT` | PDF 추출 대기 시간 초과 |
 | `ANALYSIS_FAILED` | 그 외 분석 오류 |
+
+### 분석 재시도
+
+`POST /api/v1/documents/{document_id}/retry`는 요청 본문 없이 호출한다. 업로드 완료한 본인 문서의
+`failed` 잡이나 `succeeded / analysis_skipped` 잡만 다시 대기열에 넣는다. 성공 응답은 202다.
+
+```json
+{
+  "document_id": "6f3df340-e4e6-43b4-9fe0-a03d2b205099",
+  "job_id": "aca936a4-7090-452d-a164-89fff79ef23a",
+  "job_status": "pending"
+}
+```
+
+같은 잡의 시도 횟수·실패 정보·진행률을 초기화한다. 추출 원문, 페이지 ID, 메모, 열람 기록은 유지한다.
+추출이 있으면 Docling을 다시 돌리지 않고 질문 생성부터 시작한다. 프론트는 202를 받으면 상태 폴링을
+재개한다. `can_retry`가 true일 때 버튼을 표시하되, 클릭 사이에 상태가 바뀌면 409를 받을 수 있다.
+
+대기·실행 중이거나 이미 질문 생성까지 완료한 문서는 409다. 동시에 두 번 요청해도 한 번만
+등록된다. Gemini 키가 아직 없으면 `can_retry = false`이고 재시도 요청은 503이다.
+다른 사용자의 문서는 404다. 성공한 질문을 교체하거나 다시 추출하는 API는 아니다.
 
 ### Docling 실행 설정
 
