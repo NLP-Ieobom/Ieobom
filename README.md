@@ -63,6 +63,12 @@ PDF 업로드·Docling 추출·질문 생성·페이지별 조회와 질문 저�
 문서 `/progress` API도 유지한다. [실행 방법](docs/learning.md)과
 [질문·해설 응답 형식](docs/learning-output.md)을 참고한다.
 
+PDF 전체 질문은 `GET /api/v1/documents/{document_id}/questions`로 조회한다.
+Bearer 인증과 문서 UUID만 필요하며 쿼리 파라미터와 요청 본문은 없다. 본인 문서의 질문을
+페이지 번호순으로 반환하고, 생성된 질문이 없으면 `200`과 `{"questions": []}`를 반환한다.
+없는 문서와 타인 문서는 `404`다. [응답 예시](docs/examples/document-questions.example.json)는
+두 페이지의 질문을 담고 있으며 UUID와 저장 표시는 예시 값이다.
+
 ## 환경 변수
 
 `.env.example`을 복사해 `.env`를 만들고 값을 채운다. 키는 커밋하지 않는다.
