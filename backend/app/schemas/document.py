@@ -34,6 +34,17 @@ class StatusResponse(BaseModel):
     completed_pages: int | None
     total_pages: int | None
     stage_progress_percent: int | None
+    attempt: int
+    error_code: str | None
+    error_message: str | None
+    can_retry: bool
+    next_retry_at: datetime | None
+
+
+class RetryResponse(BaseModel):
+    document_id: uuid.UUID
+    job_id: uuid.UUID
+    job_status: str
 
 
 class FileUrlResponse(BaseModel):

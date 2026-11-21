@@ -1,9 +1,12 @@
 import os
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from botocore.exceptions import BotoCoreError, ClientError
+from fastapi import APIRouter, Depends, HTTPException, Path, Response
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
@@ -27,6 +30,7 @@ from app.schemas.document import (
     DocumentListResponse,
     DocumentSummary,
     FileUrlResponse,
+    RetryResponse,
     StatusResponse,
     UploadUrlRequest,
     UploadUrlResponse,
@@ -49,6 +53,15 @@ def _get_owned_document(
     if document is None or document.user_id != user.id:
         raise HTTPException(status_code=404, detail="document not found")
     return document
+
+
+def _check_page_number(document: Document, page_number: int) -> None:
+    if document.status != DocumentStatus.UPLOADED.value:
+        raise HTTPException(status_code=409, detail="document not uploaded yet")
+    if document.page_count is None:
+        raise HTTPException(status_code=409, detail="document page count not available yet")
+    if page_number > document.page_count:
+        raise HTTPException(status_code=422, detail="page number exceeds document page count")
 
 
 @router.get("", response_model=DocumentListResponse)
@@ -168,7 +181,72 @@ def get_status(
         completed_pages=job.completed_pages if job else None,
         total_pages=job.total_pages if job else None,
         stage_progress_percent=progress,
+        attempt=job.attempt if job else 0,
+        error_code=job.error_code if job else None,
+        error_message=job.error_message if job else None,
+        can_retry=bool(job and document.status == DocumentStatus.UPLOADED.value
+                       and (job.status == "failed" or (job.status == "succeeded" and job.stage == "analysis_skipped"))
+                       and os.environ.get("GEMINI_API_KEY", "").strip()),
+        next_retry_at=job.scheduled_at if job and job.status == "pending" and job.attempt > 0 else None,
     )
+
+
+@router.post("/{document_id}/retry", response_model=RetryResponse, status_code=202)
+def retry_analysis(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> RetryResponse:
+    document = _get_owned_document(db, document_id, current_user, lock=True)
+    job = (db.query(AnalysisJob).filter_by(document_id=document.id)
+           .order_by(AnalysisJob.created_at.desc(), AnalysisJob.id.desc()).first())
+    if document.status != DocumentStatus.UPLOADED.value or job is None:
+        raise HTTPException(status_code=409, detail="document has no completed upload to retry")
+    if job.status != "failed" and not (job.status == "succeeded" and job.stage == "analysis_skipped"):
+        raise HTTPException(status_code=409, detail="analysis is active or already completed")
+    if not os.environ.get("GEMINI_API_KEY", "").strip():
+        raise HTTPException(status_code=503, detail="question generation is not configured")
+
+    # 같은 문서의 재시도 요청은 문서 행 잠금으로 직렬화한다. 기존 추출·메모·진도는 유지한다.
+    job.status = "pending"
+    job.stage = "queued"
+    job.attempt = 0
+    job.completed_pages = None
+    job.total_pages = None
+    job.error_code = None
+    job.error_message = None
+    job.locked_by = None
+    job.locked_at = None
+    job.scheduled_at = func.now()
+    db.commit()
+    return RetryResponse(document_id=document.id, job_id=job.id, job_status=job.status)
+
+
+@router.delete("/{document_id}", status_code=204)
+def delete_document(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    document = _get_owned_document(db, document_id, current_user, lock=True)
+    active = db.query(AnalysisJob.id).filter(
+        AnalysisJob.document_id == document.id, AnalysisJob.status.in_(["pending", "running"]),
+    ).first()
+    if active:
+        raise HTTPException(status_code=409, detail="wait for analysis to finish before deleting")
+    try:
+        s3.delete_object(document.s3_key)
+    except (ClientError, BotoCoreError):
+        db.rollback()
+        raise HTTPException(status_code=503, detail="could not delete PDF from storage; retry later") from None
+    try:
+        # DB 외래키의 CASCADE로 질문·저장 표시·메모·진도·분석 결과를 한 번에 지운다.
+        db.delete(document)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(status_code=503, detail="could not finish document deletion; retry deletion") from None
+    return Response(status_code=204)
 
 
 @router.get("/{document_id}/file-url", response_model=FileUrlResponse)
@@ -205,12 +283,7 @@ def record_page_view(
     current_user: User = Depends(get_current_user),
 ) -> DocumentProgressResponse:
     document = _get_owned_document(db, document_id, current_user)
-    if document.status != DocumentStatus.UPLOADED.value:
-        raise HTTPException(status_code=409, detail="document not uploaded yet")
-    if document.page_count is None:
-        raise HTTPException(status_code=409, detail="document page count not available yet")
-    if payload.page_number > document.page_count:
-        raise HTTPException(status_code=422, detail="page number exceeds document page count")
+    _check_page_number(document, payload.page_number)
 
     db.execute(insert(UserPageView).values(
         user_id=current_user.id, document_id=document.id, page_number=payload.page_number,
@@ -232,11 +305,12 @@ def record_page_view(
 @router.get("/{document_id}/pages/{page_number}/note", response_model=NoteResponse)
 def get_page_note(
     document_id: uuid.UUID,
-    page_number: int,
+    page_number: Annotated[int, Path(ge=1)],
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> NoteResponse:
     document = _get_owned_document(db, document_id, current_user)
+    _check_page_number(document, page_number)
     page = db.query(DocumentPage).filter_by(document_id=document.id, page_number=page_number).first()
     note = db.query(UserNote).filter_by(document_page_id=page.id).first() if page else None
     return NoteResponse(document_id=document.id, page_number=page_number, content=note.content if note else None)
@@ -245,12 +319,13 @@ def get_page_note(
 @router.put("/{document_id}/pages/{page_number}/note", response_model=NoteResponse)
 def save_page_note(
     document_id: uuid.UUID,
-    page_number: int,
+    page_number: Annotated[int, Path(ge=1)],
     payload: NoteUpdateRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> NoteResponse:
     document = _get_owned_document(db, document_id, current_user)
+    _check_page_number(document, page_number)
 
     # 추출 워커도 페이지를 만들기 때문에 동시에 실행돼도 같은 페이지 ID를 쓴다.
     page_id = db.execute(insert(DocumentPage).values(
@@ -274,11 +349,12 @@ def save_page_note(
 @router.get("/{document_id}/pages/{page_number}/questions", response_model=QuestionListResponse)
 def list_page_questions(
     document_id: uuid.UUID,
-    page_number: int,
+    page_number: Annotated[int, Path(ge=1)],
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> QuestionListResponse:
     document = _get_owned_document(db, document_id, current_user)
+    _check_page_number(document, page_number)
 
     page = db.query(DocumentPage).filter_by(document_id=document.id, page_number=page_number).first()
     questions = db.query(Question).filter_by(document_page_id=page.id).all() if page else []
@@ -320,11 +396,12 @@ def list_page_questions(
 @router.get("/{document_id}/pages/{page_number}/learning", response_model=StoredPageLearning)
 def get_page_learning(
     document_id: uuid.UUID,
-    page_number: int,
+    page_number: Annotated[int, Path(ge=1)],
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> StoredPageLearning:
-    _get_owned_document(db, document_id, current_user)
+    document = _get_owned_document(db, document_id, current_user)
+    _check_page_number(document, page_number)
     learning = db.get(DocumentLearning, document_id)
     if learning is None or learning.result is None:
         raise HTTPException(status_code=404, detail="learning content not available")
