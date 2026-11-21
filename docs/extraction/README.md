@@ -135,6 +135,13 @@ Gemini 키가 없으면 `succeeded / analysis_skipped`, `completed_pages = 0`, �
 등록된다. Gemini 키가 아직 없으면 `can_retry = false`이고 재시도 요청은 503이다.
 다른 사용자의 문서는 404다. 성공한 질문을 교체하거나 다시 추출하는 API는 아니다.
 
+### 페이지 번호 검증
+
+페이지 `/note` GET·PUT, `/questions` GET, `/learning` GET과 문서 `/progress` PUT은
+1부터 전체 페이지 수까지만 받는다. 범위 밖은 422, 업로드 미완료 또는 페이지 수 미확정은 409다.
+메모는 Docling 추출이 끝나 페이지 수가 저장된 뒤부터 작성할 수 있다. 유효 페이지라도 질문 생성이
+아직 끝나지 않았다면 `/learning`은 404, `/questions`는 빈 배열이다. `/ask`는 이번 변경에 포함하지 않는다.
+
 ### Docling 실행 설정
 
 `pdf_extraction.py`에서 Docling 2.150.0의 `PdfPipelineOptions`를 설정한다. CPU 1스레드를 사용하고 레이아웃·표·OCR 배치 크기, 단계 사이 큐, PDF 파서의 선행 페이지 버퍼를 각각 1로 둔다. 표는 `ACCURATE` 모드와 셀 매칭을 사용한다. OCR은 기본으로 끈다.

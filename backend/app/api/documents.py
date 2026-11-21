@@ -1,7 +1,8 @@
 import os
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -50,6 +51,15 @@ def _get_owned_document(
     if document is None or document.user_id != user.id:
         raise HTTPException(status_code=404, detail="document not found")
     return document
+
+
+def _check_page_number(document: Document, page_number: int) -> None:
+    if document.status != DocumentStatus.UPLOADED.value:
+        raise HTTPException(status_code=409, detail="document not uploaded yet")
+    if document.page_count is None:
+        raise HTTPException(status_code=409, detail="document page count not available yet")
+    if page_number > document.page_count:
+        raise HTTPException(status_code=422, detail="page number exceeds document page count")
 
 
 @router.get("", response_model=DocumentListResponse)
@@ -244,12 +254,7 @@ def record_page_view(
     current_user: User = Depends(get_current_user),
 ) -> DocumentProgressResponse:
     document = _get_owned_document(db, document_id, current_user)
-    if document.status != DocumentStatus.UPLOADED.value:
-        raise HTTPException(status_code=409, detail="document not uploaded yet")
-    if document.page_count is None:
-        raise HTTPException(status_code=409, detail="document page count not available yet")
-    if payload.page_number > document.page_count:
-        raise HTTPException(status_code=422, detail="page number exceeds document page count")
+    _check_page_number(document, payload.page_number)
 
     db.execute(insert(UserPageView).values(
         user_id=current_user.id, document_id=document.id, page_number=payload.page_number,
@@ -271,11 +276,12 @@ def record_page_view(
 @router.get("/{document_id}/pages/{page_number}/note", response_model=NoteResponse)
 def get_page_note(
     document_id: uuid.UUID,
-    page_number: int,
+    page_number: Annotated[int, Path(ge=1)],
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> NoteResponse:
     document = _get_owned_document(db, document_id, current_user)
+    _check_page_number(document, page_number)
     page = db.query(DocumentPage).filter_by(document_id=document.id, page_number=page_number).first()
     note = db.query(UserNote).filter_by(document_page_id=page.id).first() if page else None
     return NoteResponse(document_id=document.id, page_number=page_number, content=note.content if note else None)
@@ -284,12 +290,13 @@ def get_page_note(
 @router.put("/{document_id}/pages/{page_number}/note", response_model=NoteResponse)
 def save_page_note(
     document_id: uuid.UUID,
-    page_number: int,
+    page_number: Annotated[int, Path(ge=1)],
     payload: NoteUpdateRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> NoteResponse:
     document = _get_owned_document(db, document_id, current_user)
+    _check_page_number(document, page_number)
 
     # 추출 워커도 페이지를 만들기 때문에 동시에 실행돼도 같은 페이지 ID를 쓴다.
     page_id = db.execute(insert(DocumentPage).values(
@@ -313,11 +320,12 @@ def save_page_note(
 @router.get("/{document_id}/pages/{page_number}/questions", response_model=QuestionListResponse)
 def list_page_questions(
     document_id: uuid.UUID,
-    page_number: int,
+    page_number: Annotated[int, Path(ge=1)],
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> QuestionListResponse:
     document = _get_owned_document(db, document_id, current_user)
+    _check_page_number(document, page_number)
 
     page = db.query(DocumentPage).filter_by(document_id=document.id, page_number=page_number).first()
     questions = db.query(Question).filter_by(document_page_id=page.id).all() if page else []
@@ -359,11 +367,12 @@ def list_page_questions(
 @router.get("/{document_id}/pages/{page_number}/learning", response_model=StoredPageLearning)
 def get_page_learning(
     document_id: uuid.UUID,
-    page_number: int,
+    page_number: Annotated[int, Path(ge=1)],
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> StoredPageLearning:
-    _get_owned_document(db, document_id, current_user)
+    document = _get_owned_document(db, document_id, current_user)
+    _check_page_number(document, page_number)
     learning = db.get(DocumentLearning, document_id)
     if learning is None or learning.result is None:
         raise HTTPException(status_code=404, detail="learning content not available")
