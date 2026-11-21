@@ -346,6 +346,58 @@ def save_page_note(
     return NoteResponse(document_id=document.id, page_number=page_number, content=note.content)
 
 
+@router.get(
+    "/{document_id}/questions", response_model=QuestionListResponse,
+    summary="PDF 전체 질문 조회",
+    description=(
+        "본인 PDF의 모든 질문을 페이지 번호순으로 반환합니다. "
+        "같은 페이지에서는 생성 시각과 질문 ID 순으로 정렬합니다. "
+        "페이지별 질문 API와 같은 응답 형식이며 해설·근거 좌표·저장 여부를 포함합니다. "
+        "생성된 질문이 없으면 빈 배열을 반환합니다. 분석 완료 여부는 문서 /status로 확인합니다."
+    ),
+    responses={404: {"description": "문서가 없거나 다른 사용자의 문서"}},
+)
+def list_document_questions(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> QuestionListResponse:
+    document = _get_owned_document(db, document_id, current_user)
+    rows = (
+        db.query(Question, DocumentPage.page_number, SavedQuestion.question_id)
+        .join(DocumentPage, Question.document_page_id == DocumentPage.id)
+        .outerjoin(SavedQuestion, SavedQuestion.question_id == Question.id)
+        .filter(DocumentPage.document_id == document.id)
+        .order_by(DocumentPage.page_number, Question.created_at, Question.id)
+        .all()
+    )
+    response = QuestionListResponse(
+        questions=[
+            QuestionResponse(
+                id=question.id,
+                document_id=document.id,
+                page_number=page_number,
+                question_type=question.question_type,
+                content=question.content,
+                recommended_reason=question.recommended_reason,
+                prerequisite=question.prerequisite,
+                learning_order=question.learning_order,
+                first_activity=question.first_activity,
+                created_at=question.created_at,
+                is_saved=saved_id is not None,
+                evidence_block_ids=question.evidence_block_ids,
+                evidence_blocks=question.evidence_blocks,
+                explanation=question.explanation,
+                related_courses=question.related_courses,
+                trends=question.trends,
+            )
+            for question, page_number, saved_id in rows
+        ]
+    )
+    add_enrollment_status(db, current_user.id, response.questions)
+    return response
+
+
 @router.get("/{document_id}/pages/{page_number}/questions", response_model=QuestionListResponse)
 def list_page_questions(
     document_id: uuid.UUID,
