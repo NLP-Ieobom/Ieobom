@@ -102,16 +102,17 @@ Gemini가 요약하고 과목별로 30일간 재사용한다. 검색이 실패�
 
 ## 데이터 준비와 남은 범위
 
-경영학부 커리큘럼은 임시 시연 데이터다. 숭실대 실제 과목·관계는 팀원이 정리한 자료를 받은 뒤
-등록한다. 계정의 커리큘럼 선택 저장, 학기별 수강 이력, 분반 선택, 완성된 챗봇은 아직 제공하지 않는다.
+숭실대학교 AI소프트웨어학부 2026학년도 교육과정은 [과목 연결 그래프](course-graph/README.md)를 사용한다.
+계정의 커리큘럼 선택 저장, 학기별 수강 이력, 분반 선택, 완성된 챗봇은 아직 제공하지 않는다.
 
 DB 연결과 환경 변수를 준비한 뒤 `backend/`에서 실행한다. 마이그레이션만으로 과목 데이터가 들어가지는 않는다.
 
 ```sh
 alembic upgrade head
-python -m app.scripts.seed_curricula
+python -m app.scripts.seed_ssu_curriculum
 ```
 
 과목 추천용 자료는 대상 커리큘럼을 등록한 뒤 `python -m app.services.curriculum_search <corpus.zip> --curriculum-id <UUID>`로 넣는다.
+경영학부 시연 커리큘럼은 `python -m app.scripts.seed_curricula`로 등록한다.
 파일로만 질문 생성을 확인할 때는 `python -m app.pipelines.learning_cli <extraction.json> -o <learning.json> --env-file ../.env`를 사용한다.
 CLI 결과 예시는 [learning.example.json](examples/learning.example.json)이며 HTTP 응답과 달리 질문 UUID·저장 여부가 없다.

@@ -123,7 +123,9 @@ type CurriculumMapResponse = {
 하나의 커리큘럼 상세와 지도는 `/map`으로 받는다. 별도 `GET /curricula/{id}`는 없다.
 지도에는 미수강 과목도 포함하므로 `enrollment_status`로 흑백·수강 중·완료 표시를 나눈다.
 관계는 `source_course_id`에서 `target_course_id`로 연결한다. 화면 배치 좌표·학년·학기 정보는 응답에 없다.
-관계가 없으면 `relations=[]`이며, 현재 데모의 `relation_type=recommended`, `source=demo`는 공식 선수 관계가 아니다.
+관계가 없으면 `relations=[]`다. `source=ssu_2026_provisional`은 숭실대 AI소프트웨어학부 2026학년도
+시연용 학습 순서를 뜻한다. 두 시연 데이터 출처(`ssu_2026_provisional`, `demo`)의
+`relation_type=recommended`는 화면에 학습 추천으로 표시한다.
 
 수강 상태는 사용자가 직접 바꾸며 완료에서 수강 중으로 되돌릴 수 있다. 등록 취소는 PDF·메모·진도를
 지우지 않고 지도에서 `not_enrolled`로 바뀐다. 수강 등록 없이도 등록된 과목에 PDF를 올릴 수 있다.
