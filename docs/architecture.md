@@ -1,194 +1,117 @@
 # 아키텍처
 
-## 전체 구성
+현재 백엔드 구현 기준이다. 프론트에서 사용하는 경로·요청·응답은 [API 명세](api.md)에 모았다.
+
+## 구성
 
 ```mermaid
 flowchart LR
-    FE["React / Vercel"]
-    API["FastAPI (EC2)"]
-    WK["분석 워커 (EC2)"]
-    PG[("PostgreSQL + pgvector")]
-    S3[("S3 비공개 버킷")]
-    GEM["Gemini API"]
-    SS["Semantic Scholar"]
-
-    FE -- "조회 · 업로드 · 질문" --> API
-    FE -- "presigned PUT" --> S3
-    API --> PG
-    API --> S3
-    API -- "실시간 해설" --> GEM
-    PG -- "pending 잡 폴링" --> WK
-    WK --> PG
-    WK --> S3
-    WK --> GEM
-    WK --> SS
+    FE["프론트 / PDF 뷰어"] --> API["Nginx / FastAPI"]
+    FE -- "presigned PUT·GET" --> S3["S3 원본 PDF"]
+    API --> DB[("PostgreSQL 17 + pgvector")]
+    API -- "URL 발급·업로드 확인·삭제" --> S3
+    WK["분석 워커"] -- "잡 조회·결과 저장" --> DB
+    WK -- "원본 다운로드" --> S3
+    WK --> DOC["Docling 컨테이너"]
+    WK --> GEM["Gemini"]
+    WK --> SS["Semantic Scholar"]
 ```
 
-프론트는 Vercel, 나머지는 EC2 한 대에 docker compose로 올린다.
-FastAPI와 워커는 같은 이미지를 쓰고 실행 커맨드만 다르다.
+EC2에서 API·워커·DB를 Docker Compose로 실행한다. API와 워커는 같은 배포 이미지의
+서로 다른 진입점이다. Docling은 별도 CPU 이미지로 실행하며 같은 버전의 추출 코드를 사용한다.
+API는 HTTP 요청을 처리하고, 워커는 PostgreSQL의 `analysis_job`에서 작업을 가져온다.
+API와 워커가 직접 통신하거나 Redis를 사용하는 구조는 아니다.
 
-API 서버는 HTTP 요청만 처리한다. 무거운 건 전부 워커로 넘긴다. 다만 학생이 직접 던지는
-질문은 예외로, API 서버가 Gemini를 바로 호출한다. 잡 큐를 거치면 폴링 지연이 그대로
-체감되기 때문이다.
+프론트는 원본 PDF를 받아 페이지 단위로 표시한다. 페이지 이미지를 S3에 따로 저장하지 않는다.
+질문·메모·열람 위치는 JSON API로 다룬다. 조회 API는 저장된 결과를 읽으며 Gemini를 호출하지 않는다.
+`/ask`는 직접 Gemini를 호출하는 경로가 있으나 챗봇 기능은 아직 완성 범위에 포함하지 않는다.
 
-API 서버와 워커는 서로를 호출하지 않는다. `analysis_job` 레코드를 통해서만 주고받는다.
-업로드를 받은 API가 잡을 만들어 두면 워커가 집어가고, 진행 상태를 같은 레코드에 쓴다.
-프론트는 API로 그 상태를 폴링한다.
+## PDF 처리
 
-## 업로드 흐름
+1. 업로드 URL 발급 시 사용자·과목에 연결된 `document`를 `pending_upload`로 만든다.
+2. 브라우저가 S3에 PDF 바이트를 PUT한다. 서버에 파일을 다시 전송하지 않는다.
+3. `/complete`가 S3 객체의 존재와 실제 크기를 확인하고 문서를 `uploaded`로 바꾼다.
+   같은 트랜잭션에서 분석 잡을 생성한다. 이때부터 원본 PDF를 열람할 수 있다.
+4. 워커가 원본을 내려받아 Docling으로 페이지·블록·텍스트·표·좌표를 추출한다.
+   추출 JSON, 전체 페이지 수, 페이지 행을 먼저 저장한다.
+5. 추출한 텍스트와 표 셀을 3페이지씩 Gemini에 전달해 요약·개념·질문·해설을 만든다.
+   표지 등 제외 페이지도 원래 번호와 제외 사유를 유지한다. 적격 페이지에는 질문을 정확히 2개 만든다.
+6. 형식·질문 수·페이지 내 중복 질문·참조 ID를 검증하고 질문 행, 생성 결과 JSON,
+   잡 성공 상태를 마지막에 함께 저장한다. 내용의 사실성까지 자동으로 보장하는 검증은 아니다.
 
-PDF는 서버를 거치지 않는다. 브라우저가 S3로 직접 PUT한다.
+진행률은 3페이지 묶음이 끝날 때마다 기록한다. 처리한 페이지 수에는 제외 페이지도 포함된다.
+분석 도중 일부 질문이 먼저 공개되지는 않는다. 프론트는 원본을 먼저 보여 주고 `/status`를 폴링하다가
+`succeeded/completed`일 때 현재 페이지의 `/learning`을 조회한다.
+Gemini 설정이 없으면 추출만 저장하고 `succeeded/analysis_skipped`로 끝난다.
 
-1. 프론트가 과목·파일명·크기를 보내면 API가 `document` 레코드를 만들고 presigned PUT URL을 준다
-2. 브라우저가 S3에 직접 업로드한다
-3. 프론트가 완료를 알리면 API가 S3에 객체가 실제로 있는지, 크기가 맞는지 확인하고 분석 잡을 만든다
-4. 워커가 잡을 집어가 분석한다
-5. 프론트는 2~3초 간격으로 상태를 폴링한다
+추출 설정은 OCR·페이지 이미지 생성을 끄고 CPU 1스레드, 표 구조 분석과 셀 매칭을 사용한다.
+현재 Gemini에는 그림 이미지 자체를 보내지 않는다. 상세 설정과 추출 계약은
+[추출 문서](extraction/README.md), 컬럼별 저장 방식은 [저장 구조](extraction/storage.md)를 따른다.
 
-3번의 재확인이 중요하다. 서버를 거치지 않으니 클라이언트 말만 믿을 수 없다.
-presigned URL을 만들 때 Content-Type과 크기 상한을 조건으로 걸어 둔다.
+## 데이터 관계
 
-## 분석 파이프라인
+`curriculum` 안에 `course`, 과목 안에 사용자가 올린 `document`, 문서 안에 `document_page`가 있다.
+과목의 커리큘럼 소속은 비어 있을 수 있다. 문서에는 커리큘럼 ID를 중복 저장하지 않는다.
+문서·질문·메모는 업로드한 본인만 접근하며, 타인 자원은 404로 응답한다.
 
-워커가 잡을 집으면 네 단계를 순서대로 돈다.
+| 데이터 | 실제 테이블 |
+| --- | --- |
+| 계정·갱신 토큰 | `user`, `refresh_token` |
+| 공용 커리큘럼·과목·과목 간 관계 | `curriculum`, `course`, `course_relation` |
+| 사용자 수강 상태 | `user_course` |
+| 원본 파일 정보·페이지 번호 | `document`, `document_page` |
+| 추출 원문·페이지 분석 결과 | `document_learning`의 `extraction`, `result` JSONB |
+| 질문·해설·근거 좌표·추천 결과 | `question` |
+| 질문 저장 표시·페이지 메모 | `saved_question`, `user_note` |
+| 마지막 페이지·서로 다른 열람 페이지 | `user_document_progress`, `user_page_view` |
+| 과목 검색용 주제·편성 학기·1536차원 임베딩 | `course_learning_profile` |
+| 과목 단위 연구 동향 캐시 | `course_research_cache` |
+| 처리 단계·진행률·실패·실행 잠금 | `analysis_job` |
 
-**parse** — S3에서 PDF를 받아 Docling으로 페이지 구조를 뽑는다. 본문, 표, 그림,
-블록 좌표가 나온다. 좌표를 남겨 두는 이유는 나중에 질문을 원문 위치로 되돌리기 위해서다.
-단순 텍스트 추출이면 이게 안 된다.
+`document_learning.result`와 `question`은 같은 질문 UUID를 사용한다. 질문 저장 여부와 추천 과목의
+수강 상태는 조회 시점의 사용자 기록을 붙인다. 생성 결과에 저장된 과거 상태를 그대로 노출하지 않는다.
 
-여기서 표지, 목차, 감사합니다 같은 페이지를 걸러낸다. 텍스트 길이와 위치로 1차 판단하고
-애매한 건 Gemini에 물어본다. 걸러낸 페이지도 지우지 않고 사유를 적어 둔다. 기준을
-나중에 바꿀 때 어떤 페이지가 왜 빠졌는지 봐야 하기 때문이다.
+수강 중·완료는 사용자가 직접 지정한다. 열람 진도는 서로 다른 열람 페이지 수 / 전체 페이지 수이며,
+페이지가 실제 표시될 때 별도 PUT으로 기록한다. GET은 진도를 바꾸지 않고, 열람률 100%도 수강 완료를
+자동으로 설정하지 않는다. 과목 진도는 본인이 업로드 완료한 PDF들만 합산한다.
 
-**analyze** — Gemini로 페이지별 개념과 요약을 뽑는다. 여기서 "이 슬라이드가 어디까지
-설명하는가"를 같이 적게 한다. 자료에 안 나온 내용을 학생이 모른다고 단정하면 안 되고,
-설명 범위 밖은 확장 주제 후보로 다뤄야 하기 때문이다.
+## 과목 연결과 연구 동향
 
-페이지 하나씩 호출하면 호출 수가 너무 많아지니 여러 장을 묶어서 보낸다.
-몇 장씩 묶을지는 실제 자료로 토큰 수를 재 보고 정한다.
+추천 과목은 같은 커리큘럼의 `course_learning_profile`을 pgvector로 검색한 뒤 Gemini가 고른다.
+`previous`·`next`는 편성 학기의 앞뒤 관계이고, 사용자가 실제로 수강했는지는 `enrollment_status`로
+별도 표시한다. 추천 결과는 공식 선수과목 관계가 아니다. 커리큘럼 지도는 `course_relation`에 등록된
+관계를 보여 주며 질문별 추천과 구분한다.
 
-**generate** — 세 가지를 만든다.
+연구 동향은 `course.is_trend_enabled`가 켜진 과목만 생성한다. Semantic Scholar 검색 결과를
+Gemini가 요약하고 과목별로 30일간 재사용한다. 검색이 실패하고 후보도 없으면 Gemini의 연구 방향
+안내로 대체할 수 있으며 `source=gemini`, `year=null`로 구분한다. 대체 안내는 논문 검색 캐시에 넣지 않는다.
+동향 생성 자체가 실패하면 `research_status=unavailable`로 두고 질문 생성은 계속한다.
 
-- 질문: 유효 슬라이드마다 두 개. 다섯 관점 중 맞는 것만 고른다. 만든 다음 중복이나
-  슬라이드 범위를 벗어난 걸 걸러낸다.
-- 후속 과목 연결: 페이지 개념을 임베딩해서 pgvector로 과목 개념 후보를 찾고,
-  그중 실제로 연결되는 걸 Gemini가 고르고 근거를 쓴다. 검색은 임베딩, 판단은 LLM이다.
-  임베딩만 쓰면 단어가 비슷한 쪽으로 끌려간다.
-- 연구 동향: 동향이 켜진 과목만. Semantic Scholar로 논문을 찾고 Gemini가 요약한다.
+## 실패와 복구
 
-**validate** — 형식만 본다. JSON이 스키마에 맞는지, 참조하는 페이지·블록·과목 ID가
-실제로 있는지, 논문 링크가 살아 있는지, 중복이 없는지. 내용이 맞는지는 여기서 판단하지
-않는다. 그건 관리자 검수와 별도 품질 평가에서 한다.
+워커는 `FOR UPDATE SKIP LOCKED`로 잡을 하나씩 가져온다. 실행 중 30초마다 잠금을 갱신하고,
+15분간 갱신이 없는 잡은 회수한다. 실행마다 다른 잠금 소유자를 사용해 이전 워커의 늦은 저장을 막는다.
 
-현재는 추출 원문을 먼저 저장하고, 생성 결과와 질문 행은 마지막에 함께 커밋한다.
-질문 생성 중에는 3쪽 묶음이 끝날 때마다 진행 페이지 수를 기록한다. 생성에 실패하면
-저장된 추출부터 다시 시작하므로 Docling은 다시 돌리지 않지만 질문 생성은 처음부터 한다.
-실제 테이블과 API 연결은 [저장 구조](extraction/storage.md)를 참고한다.
+일시적인 AI 오류는 30초·60초 뒤 자동 재시도하며 작업 실행은 최대 3회다. 실패하거나 분석이 생략된
+문서는 사용자가 `/retry`로 다시 요청할 수 있다. 저장된 추출은 재사용하고 질문 생성은 처음부터 한다.
+메모·열람 기록은 유지한다. 성공한 질문의 재생성이나 PDF 교체 API는 없다.
 
-## 잡 큐
+삭제는 실행 대기·처리 중인 잡이 없을 때만 가능하다. S3 원본을 먼저 지운 뒤 문서에 속한
+페이지·질문·저장 표시·메모·열람 기록·분석 결과·잡을 DB에서 함께 지운다. 두 저장소는 하나의
+트랜잭션이 아니므로 S3 삭제 후 DB 삭제가 실패하면 같은 DELETE를 재요청한다.
 
-브로커 없이 PostgreSQL 테이블로 한다. 워커는 `pending` 잡을 폴링한다.
+## 데이터 준비와 남은 범위
 
-```sql
-UPDATE analysis_job
-SET status = 'running', locked_by = :worker_id, locked_at = now(),
-    attempt = attempt + 1
-WHERE id = (
-    SELECT id FROM analysis_job
-    WHERE status = 'pending' AND scheduled_at <= now()
-    ORDER BY scheduled_at, id
-    FOR UPDATE SKIP LOCKED
-    LIMIT 1
-)
-RETURNING *;
+경영학부 커리큘럼은 임시 시연 데이터다. 숭실대 실제 과목·관계는 팀원이 정리한 자료를 받은 뒤
+등록한다. 계정의 커리큘럼 선택 저장, 학기별 수강 이력, 분반 선택, 완성된 챗봇은 아직 제공하지 않는다.
+
+DB 연결과 환경 변수를 준비한 뒤 `backend/`에서 실행한다. 마이그레이션만으로 과목 데이터가 들어가지는 않는다.
+
+```sh
+alembic upgrade head
+python -m app.scripts.seed_curricula
 ```
 
-`SKIP LOCKED` 덕분에 워커를 여러 개 띄워도 같은 잡을 두 번 처리하지 않는다.
-획득이 UPDATE 한 문장이라 경쟁 조건도 없다.
-
-상태는 `pending → running → succeeded / failed`. 일시적인 실패(타임아웃, 5xx, 429,
-LLM 출력이 스키마에 안 맞는 경우)는 `scheduled_at`을 뒤로 밀어 `pending`으로 되돌린다.
-백오프는 30초에서 시작해 두 배씩, 최대 10분. 세 번 넘게 실패하면 `failed`로 두고
-관리자가 다시 넣을 수 있게 한다. 손상된 PDF나 없는 S3 객체처럼 다시 해도 소용없는
-건 바로 실패시킨다.
-
-워커는 분석 중 별도 DB 세션에서 30초마다 `locked_at`을 갱신한다. 큐를 확인할 때 마지막
-갱신으로부터 15분이 지난 `running` 잡을 회수한다. 시도 횟수가 3회 미만이면 `pending`,
-한도에 도달했으면 `failed`로 바꾸고 `WORKER_INTERRUPTED` 사유를 남긴다.
-각 실행은 서로 다른 `locked_by` 값을 사용한다. 진행률·추출·질문을 저장하기 전에 실행 권한을
-확인하고 잡 행을 잠가, 회수된 이전 워커가 결과를 덮어쓰지 못하게 한다.
-실패 정보와 사용자의 재시도는 [상태·재시도 API](extraction/README.md#진행-상태-조회)를 따른다.
-
-워커 동시성은 1로 시작한다. Docling이 메모리를 많이 써서 그렇다. 사양이 확보되면
-프로세스를 늘려도 되고, 아예 다른 인스턴스로 빼도 된다. 큐가 DB에 있어서 분리 비용이 낮다.
-
-## 데이터 모델
-
-구현하면서 바뀔 테니 전체 스키마 대신 덩어리와 관계만 적는다.
-
-커리큘럼 목록·지도, 수강 상태 변경, PDF 열람 진도를 구현했다. 개인 커리큘럼 선택을 계정에 저장하는 기능은 아직 없다. [구현 범위와 남은 계획](curriculum-plan.md)을 참고한다.
-
-**교육과정 쪽(공용)** — `curriculum`, `course`, `course_relation`, `course_concept`,
-`syllabus`, `course_alias`. 관리자가 등록하고 모든 학생이 공유한다.
-
-`course_relation`에는 공식 교육과정에 있는 선수·후속 관계와 시스템이 추천한 연결이
-같이 들어간다. `source` 컬럼으로 구분하고 화면에서도 다르게 보여 준다. 이 구분이
-흐려지면 "공식적으로 이어지는 과목"과 "AI가 비슷하다고 본 과목"이 섞여서 신뢰를 잃는다.
-
-`course.is_trend_enabled`로 과목별 동향 기능을 켜고 끈다.
-
-**문서 쪽(사용자별)** — `document` → `document_page` → `page_analysis`, `page_concept`.
-업로드한 본인만 본다. 강의자료는 교수 저작물이라 공유하지 않는다.
-
-**생성 결과** — `question`(유형, 본문, 추천 이유, 사전 지식, 학습 순서, 첫 활동,
-원문 위치), `page_course_link`, `research_trend` + `page_trend_link`.
-
-동향은 과목 단위로 캐시하고 페이지와의 연결만 문서별로 만든다. 같은 과목의 다른
-학생이 검색 결과를 재사용하게 하려는 것이다. Semantic Scholar 호출을 줄이는 게 목적이고,
-캐시 유효기간은 일단 30일로 본다.
-
-**개인 기록** — `saved_question`, `user_note`, `ai_conversation` / `ai_message`.
-저장 목록에서 고르면 그 질문이 달린 PDF 페이지로 돌아간다.
-
-**운영** — `analysis_job`, `job_step_log`, `validation_result`, `admin_review`,
-그리고 `llm_usage_log`.
-
-`llm_usage_log`에는 사전 생성인지 학생 질문인지를 구분하는 컬럼을 둔다.
-검증 계획에 두 비용을 나눠 기록한다는 항목이 있어서 필요하다.
-
-임베딩은 전부 1536차원으로 맞춘다. 이유는 [decisions.md](decisions.md)에 적었다.
-
-## API
-
-전부 `/api/v1` 아래. 주요한 것만.
-
-```
-POST /documents/upload-url        presigned PUT URL 발급
-POST /documents/{id}/complete     업로드 확인 후 분석 잡 생성
-GET  /documents/{id}/status       분석 진행 상태 (폴링 대상)
-GET  /documents/{id}/file-url     열람용 presigned GET URL
-
-GET  /pages/{id}/questions        슬라이드 기본 질문
-GET  /pages/{id}/related-courses  후속 과목 연결과 근거
-GET  /pages/{id}/trends           연결된 연구 동향
-POST /pages/{id}/ask              개별 질문 (Gemini 실시간)
-
-GET  /curricula/{id}/map          커리큘럼 지도와 내 수강 상태
-```
-
-조회 경로에서는 LLM을 부르지 않는다. 실시간 호출은 `/ask` 계열뿐이다.
-이 선이 무너지면 사전 생성의 의미가 없어진다.
-
-다른 사용자의 문서에 접근하면 403이 아니라 404로 응답한다. 존재 여부를 노출하지 않는다.
-
-presigned GET URL은 만료된다. PDF를 오래 열어 두면 중간에 로딩이 깨지므로
-프론트가 `file-url`을 다시 받아 복구할 수 있어야 한다.
-
-## 프론트
-
-핵심 화면은 PDF 뷰어다. 본문 옆에 질문을 띄우고, 누르면 추가 학습 패널이 열린다.
-패널을 열거나 닫을 때 읽던 위치를 잃으면 안 된다. PDF 컴포넌트가 리마운트되지 않게
-상태를 바깥에 둬야 한다.
-
-서버 상태는 TanStack Query로 관리한다. 분석 상태 폴링은 `refetchInterval`로 걸고
-완료나 실패에서 멈춘다. API 호출은 `src/api`에만 두고 컴포넌트에서 직접 fetch하지 않는다.
+과목 추천용 자료는 대상 커리큘럼을 등록한 뒤 `python -m app.services.curriculum_search <corpus.zip> --curriculum-id <UUID>`로 넣는다.
+파일로만 질문 생성을 확인할 때는 `python -m app.pipelines.learning_cli <extraction.json> -o <learning.json> --env-file ../.env`를 사용한다.
+CLI 결과 예시는 [learning.example.json](examples/learning.example.json)이며 HTTP 응답과 달리 질문 UUID·저장 여부가 없다.

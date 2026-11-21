@@ -6,7 +6,7 @@
         --corpus ieobom-ssu-corpus.zip --course-code 21501666 --trends    (with course links and research)
 
 The output is what generate_learning returns and the worker stores, so the page objects are the
-same ones GET /documents/{document_id}/pages/{page_number}/learning serves. docs/learning-output.md
+same ones GET /documents/{document_id}/pages/{page_number}/learning serves. docs/api.md
 describes every field.
 """
 

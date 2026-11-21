@@ -1,6 +1,6 @@
 # PDF·강의계획서 데이터 형식
 
-이어봄에서 문서 추출기, 질문 생성기, PDF 뷰어 사이에 교환하는 v1.0 형식이다. 스키마는 JSON Schema Draft 2020-12이고, 예시는 팀 내 통합 테스트용 가상 자료다. 저장소의 [분석 파이프라인](../architecture.md#분석-파이프라인)을 따른다.
+이어봄에서 문서 추출기, 질문 생성기, PDF 뷰어 사이에 교환하는 v1.0 형식이다. 스키마는 JSON Schema Draft 2020-12이고, 예시는 팀 내 통합 테스트용 가상 자료다. 저장소의 [PDF 처리 흐름](../architecture.md#pdf-처리)을 따른다.
 
 | 형식 | 스키마 | 예시 |
 | --- | --- | --- |
@@ -57,106 +57,10 @@ python -m backend.app.pipelines.pdf_extraction overlay lecture.pdf tmp/extractio
 
 Python 진입점은 `backend.app.pipelines.pdf_extraction.extract_pdf(Path(...), document_id=...)`다. 워커는 같은 코드의 CLI를 별도 Docling 컨테이너에서 실행한다. 실행마다 다른 임시 파일명을 쓰고 결과를 읽은 뒤 임시 PDF·JSON을 지운다. DB에는 [PDF 추출·질문 저장](storage.md)의 구조로 저장한다. 강의계획서 예시는 수집·검수 단계에서 채울 데이터 형식을 보여 준다.
 
-### 진행 상태 조회
+### 서비스 API
 
-프론트는 기존 `GET /api/v1/documents/{document_id}/status`를 2~3초 간격으로 조회한다. `job_status`가 `succeeded` 또는 `failed`이면 폴링을 멈춘다. 조회 요청이 분석을 실행하거나 새 잡을 만들지는 않는다.
-
-응답에는 문서·잡 상태, 단계, 페이지 진행률과 함께 `attempt`, `error_code`, `error_message`,
-`can_retry`, `next_retry_at`가 있다. 업로드 완료 전에는 `status = pending_upload`,
-`job_status = null`, `stage = uploading`이다. S3 업로드 퍼센트는 브라우저에서 전송한 바이트로 계산한다.
-
-| stage | 의미 |
-| --- | --- |
-| `uploading` | PDF 업로드 완료 확인 전 |
-| `queued` | 워커 처리 대기 |
-| `downloading` | 워커가 S3에서 PDF를 받는 중 |
-| `extracting` | Docling 추출 중 |
-| `analyzing` | Gemini 분석·질문 생성 중 |
-| `completed` | 질문 생성과 DB 저장 완료 |
-| `analysis_skipped` | Gemini 키가 없어 추출만 저장하고 질문 생성은 생략됨 |
-
-단계 변경은 DB에 커밋하므로 API의 별도 세션에서도 읽을 수 있다. 실패 시 `job_status = failed`로 바꾸고 실패한 `stage`는 유지한다. 단계 기록이 없던 기존 잡은 새 필드가 `null`이다.
-
-```json
-{
-  "document_id": "6f3df340-e4e6-43b4-9fe0-a03d2b205099",
-  "status": "uploaded",
-  "job_status": "succeeded",
-  "stage": "completed",
-  "completed_pages": 24,
-  "total_pages": 24,
-  "stage_progress_percent": 100,
-  "attempt": 1,
-  "error_code": null,
-  "error_message": null,
-  "can_retry": false,
-  "next_retry_at": null
-}
-```
-
-위는 24쪽 PDF의 분석까지 끝났을 때의 응답 형식이다. `total_pages`는 Docling 추출 완료 후 채운다. `completed_pages`는 질문 제외 페이지도 포함한 분석 완료 페이지 수로, 3쪽 묶음마다 갱신한다. `analyzing`과 `completed`에서 페이지 수로 퍼센트를 계산한다. Docling은 중간 진행을 전달하지 않으므로 `extracting`의 페이지 수와 퍼센트는 `null`이다. 전체 작업의 예상 퍼센트나 남은 시간을 뜻하지 않는다.
-
-Gemini 키가 없으면 `succeeded / analysis_skipped`, `completed_pages = 0`, 퍼센트는 `null`로 끝난다. 이때는 추출 원문과 페이지 수만 저장되며 질문 생성 완료로 표시하지 않는다. 일시적인 생성 오류로 재시도할 때는 `pending / queued`로 돌아간다. 저장된 추출을 재사용하고 생성 진행률은 다시 0부터 센다. 짧은 단계는 폴링 사이에 지나갈 수 있다.
-
-`attempt`는 현재 수동 재시도 이후 워커가 실행한 횟수다. 최초 대기와 수동 재시도 직후에는 0,
-실행을 시작할 때마다 1씩 증가한다. 자동 재시도 대기에서는 `next_retry_at`에 예약 시각을 주며
-폴링을 계속한다. 새 실행이 시작되면 이전 오류를 지운다. 오류 메시지에 외부 API의 원문 응답이나
-키를 담지 않는다. 프론트는 `job_status`를 먼저 확인하고 `error_code`로 실패 화면을 구분한다.
-
-| error_code | 의미 |
-| --- | --- |
-| `WORKER_INTERRUPTED` | 워커 갱신이 15분 동안 끊겨 작업을 회수함 |
-| `AI_TEMPORARY_ERROR` | 일시적인 생성 서비스 오류. 한도 내에서는 자동 재시도 |
-| `AI_REQUEST_FAILED` | 생성 요청 거절. 서버 설정 확인 필요 |
-| `AI_NOT_CONFIGURED` | Gemini 키가 없어 질문 생성 생략 |
-| `PDF_DOWNLOAD_FAILED` | S3 원본 다운로드 실패 |
-| `EXTRACTION_FAILED` | PDF 추출 실패 또는 부분 추출 |
-| `EXTRACTION_TIMEOUT` | PDF 추출 대기 시간 초과 |
-| `ANALYSIS_FAILED` | 그 외 분석 오류 |
-
-### 분석 재시도
-
-`POST /api/v1/documents/{document_id}/retry`는 요청 본문 없이 호출한다. 업로드 완료한 본인 문서의
-`failed` 잡이나 `succeeded / analysis_skipped` 잡만 다시 대기열에 넣는다. 성공 응답은 202다.
-
-```json
-{
-  "document_id": "6f3df340-e4e6-43b4-9fe0-a03d2b205099",
-  "job_id": "aca936a4-7090-452d-a164-89fff79ef23a",
-  "job_status": "pending"
-}
-```
-
-같은 잡의 시도 횟수·실패 정보·진행률을 초기화한다. 추출 원문, 페이지 ID, 메모, 열람 기록은 유지한다.
-추출이 있으면 Docling을 다시 돌리지 않고 질문 생성부터 시작한다. 프론트는 202를 받으면 상태 폴링을
-재개한다. `can_retry`가 true일 때 버튼을 표시하되, 클릭 사이에 상태가 바뀌면 409를 받을 수 있다.
-
-대기·실행 중이거나 이미 질문 생성까지 완료한 문서는 409다. 동시에 두 번 요청해도 한 번만
-등록된다. Gemini 키가 아직 없으면 `can_retry = false`이고 재시도 요청은 503이다.
-다른 사용자의 문서는 404다. 성공한 질문을 교체하거나 다시 추출하는 API는 아니다.
-
-### 페이지 번호 검증
-
-페이지 `/note` GET·PUT, `/questions` GET, `/learning` GET과 문서 `/progress` PUT은
-1부터 전체 페이지 수까지만 받는다. 범위 밖은 422, 업로드 미완료 또는 페이지 수 미확정은 409다.
-메모는 Docling 추출이 끝나 페이지 수가 저장된 뒤부터 작성할 수 있다. 유효 페이지라도 질문 생성이
-아직 끝나지 않았다면 `/learning`은 404, `/questions`는 빈 배열이다. `/ask`는 이번 변경에 포함하지 않는다.
-
-### PDF 삭제
-
-`DELETE /api/v1/documents/{document_id}`는 본인 문서만 삭제하고 본문 없는 204를 반환한다.
-분석 잡이 `pending` 또는 `running`이면 409로 거부한다. 이 API는 분석 취소 기능을 포함하지 않는다.
-실패·완료·분석 생략 상태와 업로드 미완료 문서는 삭제할 수 있다. 업로드 중이라면 먼저 프론트의
-PUT 전송을 중단해야 한다. 이미 발급한 업로드 URL 자체를 취소하는 기능은 없다.
-
-S3 원본을 먼저 삭제하고, DB에서는 문서와 페이지·질문·질문 저장 표시·메모·열람 기록·추출 및
-분석 결과·잡을 한 트랜잭션으로 삭제한다. 과목, 수강 등록, 공용 과목 동향 캐시는 유지한다.
-화면에서는 문서 목록, 저장한 질문 목록, 과목 진도를 다시 조회한다.
-
-S3 삭제가 실패하면 503이고 DB는 유지한다. S3 삭제 후 DB 저장이 실패한 경우도 503이며 같은
-DELETE를 다시 호출해 정리한다. S3와 DB가 하나의 트랜잭션은 아니므로 이 경우에는 원본만 먼저
-없어질 수 있다. 없는 S3 객체를 다시 삭제하는 것은 성공으로 취급한다. 삭제 완료 후 조회·재삭제와
-타인 문서 삭제는 404다. 버전 관리가 켜진 버킷의 과거 버전과 DB 백업까지 지우는 API는 아니다.
+업로드·진행 상태·재시도·페이지 조회·삭제는 [API 명세](../api.md)에 모았다.
+이 문서는 추출 JSON 계약, 로컬 추출 실행과 좌표 검토에 사용한다.
 
 ### Docling 실행 설정
 
