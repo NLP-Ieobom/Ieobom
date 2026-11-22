@@ -1,12 +1,12 @@
 # 프론트 연동 API 명세
 
-현재 라우터 30개 기준. 구조는 [architecture.md](architecture.md), 실행 가능한 요청은
+현재 라우터 31개 기준. 구조는 [architecture.md](architecture.md), 실행 가능한 요청은
 [Swagger](https://13-209-160-89.sslip.io/docs), 기계용 스키마는
 [OpenAPI](https://13-209-160-89.sslip.io/openapi.json)에서 확인한다.
 
 [공통 규칙](#공통-규칙) · [인증](#인증) · [커리큘럼·과목](#커리큘럼과-과목) ·
 [PDF](#pdf-등록과-조회) · [분석 상태](#분석-상태와-재시도) · [질문](#페이지-분석과-질문) ·
-[메모·진도](#메모와-열람-진도) · [화면 연결](#화면-연결-순서)
+[메모·진도](#메모와-열람-진도) · [채팅](#추가-질문과-상태-확인) · [화면 연결](#화면-연결-순서)
 
 ## 공통 규칙
 
@@ -197,7 +197,7 @@ if (!response.ok) throw new Error("PDF 업로드 실패");
 `/file-url`은 원본 PDF 전체를 여는 URL이다. 질문 생성 중에도 사용할 수 있다. URL이 만료되면
 다시 발급받는다. PDF를 페이지별 이미지 URL로 조회하는 API는 없다.
 
-삭제는 PDF와 문서에 딸린 질문·저장 표시·메모·열람 기록·분석 결과를 제거한다. 수강 등록은 남는다.
+삭제는 PDF와 문서에 딸린 질문·저장 표시·메모·채팅·열람 기록·분석 결과를 제거한다. 수강 등록은 남는다.
 `503`이면 같은 DELETE로 재시도하고, 이미 삭제된 문서의 재삭제는 `404`다. 업로드 중인 파일을 지울 때는
 먼저 브라우저의 S3 전송을 중단한다. 분석 취소나 발급한 업로드 URL의 취소 기능은 없다.
 
@@ -451,26 +451,45 @@ type DocumentProgressResponse = DocumentReadingProgress & {
 
 | API | 입력 | 성공 | 추가 오류 |
 | --- | --- | --- | --- |
-| `POST /documents/{document_id}/pages/{page_number}/ask` | `{question: string, history?: {question: string, answer: string}[]}` | `200 {answer_status: "answered" \| "conversation" \| "insufficient_evidence", explanation: string, evidence_block_ids: string[]}` | `404` 결과·페이지 없음, `409` 제외 페이지, `422` 입력 형식·길이 오류, `503` 설정 없음, `502` 생성 실패 |
+| `POST /documents/{document_id}/pages/{page_number}/ask` | `{question: string}` | `200 StoredChatExchange` | `404` 결과·페이지 없음, `409` 업로드·추출 미완료 또는 제외 페이지, `422` 페이지 범위·질문 길이 오류, `503` 설정 없음·DB 저장 실패, `502` 생성 실패 |
+| `GET /documents/{document_id}/pages/{page_number}/chat` | 쿼리 `limit: 1~50`, 기본 `20` | `200 {document_id: UUID, page_number: number, exchanges: StoredChatExchange[]}` | `409` 업로드·추출 미완료, `422` 페이지 범위·limit 오류 |
 | `GET /health` | 없음. 인증 불필요, `/api/v1` 밖 | `200 {status: "ok"}` | API 프로세스 응답 확인용 |
 
-`question`은 앞뒤 공백을 제거한 뒤 1~1,000자다. `history`에는 같은 페이지에서 주고받은 최근 3쌍까지 오래된 순서대로 보낸다.
-이전 질문도 1~1,000자, 답변은 1~3,000자다. 첫 질문은 `history`를 생략하거나 빈 배열을 보낸다.
-클라이언트는 페이지별로 기록을 관리하고, 이전 페이지의 응답이 늦게 도착하면 현재 화면에는 표시하지 않는다.
+```ts
+type StoredChatExchange = {
+  id: UUID;
+  question: string;
+  answer_status: "answered" | "conversation" | "insufficient_evidence";
+  explanation: string;
+  evidence_block_ids: string[];
+  created_at: DateTime;
+};
+```
+
+`question`은 앞뒤 공백을 제거한 뒤 1~1,000자다. 서버가 같은 사용자·문서·페이지의 최근 3쌍을
+오래된 순서로 Gemini에 전달한다. 기존 클라이언트가 보내는 `history`는 무시한다.
+질문·답변을 DB에 함께 저장한 뒤 `200`을 반환하며 인사나 근거 부족 응답도 저장한다.
+Gemini 호출·검증이 실패하면 대화 기록을 만들지 않는다.
 
 ```json
 {
-  "question": "그게 왜 필요한 거야?",
-  "history": [
-    {"question": "어텐션이 뭐야?", "answer": "토큰마다 다른 토큰의 정보를 얼마나 참고할지 정하는 방식이에요."}
-  ]
+  "question": "그게 왜 필요한 거야?"
 }
 ```
+
+페이지에 진입하면 `/chat?limit=20`을 조회하고 `exchanges`를 그대로 표시한다. 최근 20쌍을 골라
+그 안에서 오래된 순서로 반환하며 내역이 없으면 빈 배열이다. 최대 50쌍까지 조회할 수 있고,
+그 이전 내역을 넘겨 보는 페이지네이션은 없다. DB에는 더 오래된 대화도 남지만 Gemini에는 최근 3쌍만 사용한다.
+배포 전에 나눈 대화는 저장되어 있지 않아 복원되지 않는다.
+
+전송 중에는 같은 페이지의 추가 전송을 막는다. 동시에 보낸 요청은 서로의 답변을 아직 참조할 수 없다.
+성공 응답은 `id` 기준으로 화면 목록에 추가하고, 페이지를 바꾼 뒤 늦게 온 응답은 현재 화면에 붙이지 않는다.
+전송 결과를 받지 못했다면 먼저 `/chat`을 다시 조회한다. 이미 저장된 질문을 재전송하면 새 대화로 저장된다.
 
 `answered`에는 현재 페이지의 근거 블록이 한 개 이상 들어간다. `conversation`은 인사·감사 같은 짧은 대화이고,
 `insufficient_evidence`는 현재 페이지에서 답을 뒷받침할 내용을 찾지 못한 경우다. 두 경우 모두 근거 목록은 비어 있으며
 화면은 `explanation`을 그대로 표시한다. 근거가 있으면 기존 `/learning.evidence_blocks`에서 같은 `block_id`를 찾아 강조한다.
-서버는 해당 페이지의 텍스트·표로 Gemini를 호출하며, 대화 기록은 요청 처리에만 사용한다.
+서버는 해당 페이지의 텍스트·표로 Gemini를 호출한다. `/chat` 조회 자체는 Gemini 호출이나 열람 진도 변경을 하지 않는다.
 `/health` 성공은 DB·S3·워커·Gemini 상태까지 보장하지 않는다.
 
 ## 화면 연결 순서
@@ -480,7 +499,7 @@ type DocumentProgressResponse = DocumentReadingProgress & {
 2. PDF는 URL 발급, S3 PUT, `/complete` 순서로 등록한다. 이후 `/file-url`로 바로 보여 주고 상태를 폴링한다.
 3. 문서를 다시 열 때는 `/file-url`, `/progress`, `/status`를 조회한다. 마지막 페이지를 복원하고 실제 표시된 페이지를 PUT한다.
    페이지 수 미확정으로 `409`를 받으면 추출 후 현재 페이지를 기록한다.
-4. 분석 완료 시 현재 페이지 `/learning`을 조회한다. 페이지 이동 시 해당 페이지의 `/learning`·`/note`를 읽고 진도를 PUT한다.
+4. 분석 완료 시 현재 페이지 `/learning`을 조회한다. 페이지 이동 시 해당 페이지의 `/learning`·`/note`·`/chat`을 읽고 진도를 PUT한다.
    분석 중에는 생성 중 안내, 완료됐지만 제외된 페이지에는 질문 없는 페이지 안내를 구분한다.
 5. 질문 저장·해제 후에는 현재 `/learning`, 질문 목록, 저장 목록의 같은 UUID에 `is_saved`를 반영하거나 다시 조회한다.
    수강 상태를 바꾸면 지도·내 과목·추천 과목의 상태도 갱신한다.
