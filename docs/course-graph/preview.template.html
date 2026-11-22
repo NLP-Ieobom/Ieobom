@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026 AI소프트웨어학부 과목 지도</title>
+<style>
+:root {
+  font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+  color:#18312b;
+  background:#f4f7f5;
+  font-synthesis:none;
+  color-scheme:light
+}
+* {
+  box-sizing:border-box
+}
+body {
+  margin:0
+}
+button,input,select {
+  font:inherit
+}
+button {
+  cursor:pointer
+}
+button:focus-visible,input:focus-visible,select:focus-visible,[role=button]:focus-visible {
+  outline:3px solid #207462;
+  outline-offset:3px
+}
+.top {
+  padding:30px 36px 24px;
+  border-bottom:1px solid #dbe5df;
+  background:#fff
+}
+.top h1 {
+  font-size:25px;
+  letter-spacing:-.7px;
+  margin:0 0 9px
+}
+.top p {
+  color:#52685d;
+  margin:0;
+  font-size:14px;
+  line-height:1.7
+}
+.layout {
+  display:grid;
+  grid-template-columns:270px minmax(0,1fr);
+  max-width:1600px;
+  margin:auto;
+  min-height:calc(100vh - 130px)
+}
+.sidebar {
+  padding:25px 18px;
+  border-right:1px solid #dbe5df;
+  background:#fbfcfb
+}
+.control {
+  display:block;
+  margin-bottom:17px;
+  font-size:13px;
+  font-weight:700
+}
+.control span {
+  display:block;
+  margin-bottom:7px
+}
+.control input,.control select {
+  width:100%;
+  padding:10px 11px;
+  background:#fff;
+  border:1px solid #c9d7cf;
+  border-radius:7px;
+  color:#18312b;
+  font-size:14px
+}
+.count {
+  font-size:12px;
+  color:#607268;
+  margin:0 0 10px
+}
+.course-list {
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  max-height:65vh;
+  overflow:auto;
+  padding:3px 4px 6px 0
+}
+.course {
+  border:1px solid transparent;
+  border-radius:7px;
+  text-align:left;
+  padding:11px 12px;
+  background:transparent;
+  color:#18312b;
+  line-height:1.5
+}
+.course:hover {
+  background:#edf3ef
+}
+.course[aria-current=true] {
+  background:#e1eee7;
+  border-color:#a9c9b6;
+  font-weight:700
+}
+.course small {
+  display:block;
+  font-size:11px;
+  color:#62786c;
+  margin-top:3px;
+  font-weight:400
+}
+main {
+  padding:26px 28px 40px;
+  min-width:0
+}
+.focus-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:18px
+}
+.focus-head h2 {
+  font-size:23px;
+  margin:0 0 7px;
+  letter-spacing:-.5px
+}
+.meta {
+  font-size:13px;
+  color:#5a7064;
+  line-height:1.65
+}
+.download {
+  border:1px solid #c9d7cf;
+  padding:9px 12px;
+  border-radius:7px;
+  background:#fff;
+  color:#315b49;
+  font-size:12px;
+  white-space:nowrap
+}
+.download:hover {
+  background:#edf3ef
+}
+.graph-panel {
+  background:#fff;
+  border:1px solid #d7e2db;
+  border-radius:12px;
+  overflow:hidden
+}
+.graph-help {
+  margin:0;
+  padding:14px 20px;
+  border-bottom:1px solid #e7ede9;
+  font-size:12px;
+  color:#62766a;
+  line-height:1.6
+}
+.graph-scroll {
+  overflow:auto
+}
+.graph-scroll svg {
+  display:block;
+  width:100%;
+  min-width:740px
+}
+.empty {
+  font-size:13px;
+  fill:#7c8f82
+}
+.node rect {
+  fill:#f8fbf9;
+  stroke:#bacfc0;
+  stroke-width:1.3
+}
+.node text {
+  fill:#243e31;
+  font-size:15px;
+  font-weight:600;
+  pointer-events:none
+}
+.node .placement {
+  font-size:11px;
+  font-weight:400;
+  fill:#6a8070
+}
+.node:hover rect {
+  fill:#e9f3ec;
+  stroke:#4c9870
+}
+.node.focus rect {
+  fill:#176748;
+  stroke:#176748
+}
+.node.focus text {
+  fill:#fff
+}
+.node.focus .placement {
+  fill:#d4e9dc
+}
+.column-label {
+  font-size:13px;
+  fill:#63806a;
+  font-weight:600
+}
+.edge {
+  fill:none;
+  stroke:#9bb9a5;
+  stroke-width:1.6
+}
+.edge.official {
+  stroke:#365f4b;
+  stroke-width:2
+}
+.edge.recommended {
+  stroke-dasharray:6 4
+}
+.edge:hover {
+  stroke:#176748;
+  stroke-width:3
+}
+.node:focus {
+  outline:none
+}
+.node:focus rect {
+  stroke:#073c29;
+  stroke-width:3
+}
+.detail {
+  margin-top:22px
+}
+.detail h3 {
+  font-size:17px;
+  margin:0 0 9px
+}
+.note {
+  font-size:12px;
+  color:#63776b;
+  line-height:1.7;
+  margin:0 0 14px
+}
+.relations {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px
+}
+.relation-group {
+  background:#fff;
+  border:1px solid #dce5df;
+  border-radius:10px;
+  padding:17px
+}
+.relation-group h4 {
+  font-size:13px;
+  margin:0 0 12px;
+  color:#526e5c
+}
+.relation-item {
+  padding:12px 0;
+  border-top:1px solid #edf1ee
+}
+.relation-item:first-of-type {
+  border-top:0;
+  padding-top:0
+}
+.relation-name {
+  border:0;
+  background:none;
+  padding:0;
+  text-align:left;
+  font-size:14px;
+  font-weight:700;
+  color:#1c6949;
+  line-height:1.6
+}
+.relation-name:hover {
+  text-decoration:underline
+}
+.relation-type {
+  display:inline-block;
+  font-size:10px;
+  border:1px solid #d4e1d8;
+  border-radius:4px;
+  padding:2px 5px;
+  color:#577261;
+  margin-left:7px;
+  vertical-align:middle
+}
+.reason {
+  font-size:13px;
+  color:#4a6153;
+  line-height:1.8;
+  margin:7px 0 0
+}
+.source {
+  font-size:11px;
+  color:#798a7e;
+  margin:5px 0 0;
+  line-height:1.6
+}
+.muted {
+  font-size:13px;
+  color:#75867a;
+  line-height:1.7
+}
+.legend {
+  display:flex;
+  flex-wrap:wrap;
+  gap:16px;
+  margin:12px 2px;
+  font-size:11px;
+  color:#607569
+}
+.legend span {
+  display:flex;
+  align-items:center;
+  gap:7px
+}
+.line {
+  width:26px;
+  height:0;
+  border-top:2px solid #365f4b
+}
+.line.dashed {
+  border-top:2px dashed #9bb9a5
+}
+.failure {
+  margin:40px;
+  color:#803c30;
+  line-height:1.8
+}
+.legend [hidden] {
+  display:none
+}
+@media(max-width:800px) {
+  .top {
+    padding:22px 20px
+  }
+  .top h1 {
+    font-size:21px
+  }
+  .layout {
+    grid-template-columns:1fr
+  }
+  .sidebar {
+    border-right:0;
+    border-bottom:1px solid #dbe5df;
+    padding:18px 20px
+  }
+  .filters {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px
+  }
+  .control {
+    margin-bottom:10px
+  }
+  .course-list {
+    max-height:170px;
+    display:grid;
+    grid-template-columns:1fr 1fr
+  }
+  .course {
+    padding:8px 10px
+  }
+  main {
+    padding:22px 16px
+  }
+  .focus-head h2 {
+    font-size:21px
+  }
+  .relations {
+    grid-template-columns:1fr
+  }
+}
+</style>
+</head>
+<body>
+<header class="top">
+<h1 id="page-title">2026 AI소프트웨어학부 과목 지도</h1>
+<p>과목을 선택하면 앞뒤로 연결된 과목과 연결 근거를 확인할 수 있습니다.</p>
+</header>
+<div class="layout">
+<aside class="sidebar" aria-label="과목 선택">
+<div class="filters">
+<label class="control"><span>전공</span><select id="track"><option value="">전체 전공</option></select></label>
+<label class="control"><span>과목 찾기</span><input id="search" type="search" placeholder="과목명 검색" autocomplete="off"></label>
+</div>
+<p class="count" id="course-count" aria-live="polite"></p>
+<nav class="course-list" id="course-list" aria-label="과목 목록"></nav>
+</aside>
+<main>
+<div class="focus-head">
+<div><h2 id="focus-title"></h2><div class="meta" id="focus-meta"></div></div>
+<button type="button" class="download" id="download">원본 JSON 받기</button>
+</div>
+<div class="graph-panel">
+<p class="graph-help">화살표는 학습 연결 방향입니다. 과목을 누르면 해당 과목의 연결을 살펴볼 수 있습니다.</p>
+<div class="graph-scroll" id="graph"></div>
+</div>
+<div class="legend" aria-label="관계 범례">
+<span id="official-legend"><i class="line"></i>공식 선수 관계</span>
+<span><i class="line dashed"></i>시연용 추천 학습 순서</span>
+</div>
+<section class="detail" aria-labelledby="detail-title">
+<h3 id="detail-title">연결 근거</h3>
+<p class="note" id="relation-note"></p>
+<div class="relations" id="relations"></div>
+</section>
+</main>
+</div>
+<script id="course-data" type="application/json">__COURSE_GRAPH_JSON__</script>
+<script>
+"use strict";
+(() => {
+const data = JSON.parse(document.getElementById("course-data").textContent);
+document.getElementById("official-legend").hidden = !data.edges.some(edge => edge.official_prerequisite);
+const nodes = new Map(data.nodes.map(node => [node.course_id, node]));
+const tracks = new Map(data.tracks.map(track => [track.track_id, track.name]));
+const incoming = new Map(data.nodes.map(node => [node.course_id, []]));
+const outgoing = new Map(data.nodes.map(node => [node.course_id, []]));
+for (const edge of data.edges) {
+    incoming.get(edge.to_course_id).push(edge);
+    outgoing.get(edge.from_course_id).push(edge);
+}
+const trackInput = document.getElementById("track");
+const searchInput = document.getElementById("search");
+let focusId = data.nodes.find(node => node.name === "자연언어처리")?.course_id
+    || data.nodes.find(node => /자연.*처리/.test(node.name))?.course_id
+    || data.nodes[0]?.course_id;
+let trackId = "";
+const ns = "http://www.w3.org/2000/svg";
+
+function element(tag, text, className) {
+    const node = document.createElement(tag);
+    if (text !== undefined) node.textContent = text;
+    if (className) node.className = className;
+    return node;
+}
+function svgElement(tag, attributes) {
+    const node = document.createElementNS(ns, tag);
+    for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value);
+    return node;
+}
+function placements(node) {
+    return (node.placements || []).map(p => p.year + "학년 " + p.semester + "학기").filter((p,i,all) => all.indexOf(p) === i).join(" · ");
+}
+function matchesTrack(node) {
+    return !trackId || !(node.tracks || []).length || node.tracks.includes(trackId);
+}
+function courseOrder(a, b) {
+    const pa = a.placements?.[0] || {};
+    const pb = b.placements?.[0] || {};
+    return (pa.year || 99) - (pb.year || 99) || (pa.semester || 99) - (pb.semester || 99)
+        || a.name.localeCompare(b.name, "ko");
+}
+function eligibleEdges(edges, otherId) {
+    return edges.filter(edge => matchesTrack(nodes.get(edge[otherId])));
+}
+function selectCourse(id) {
+    focusId = id;
+    render();
+}
+function renderList() {
+    const list = document.getElementById("course-list");
+    list.replaceChildren();
+    const query = searchInput.value.trim().toLocaleLowerCase();
+    const visible = data.nodes.filter(node => matchesTrack(node) && node.name.toLocaleLowerCase().includes(query)).sort(courseOrder);
+    document.getElementById("course-count").textContent = visible.length + "개 과목";
+    for (const node of visible) {
+        const button = element("button", undefined, "course");
+        button.type = "button";
+        button.setAttribute("aria-current", String(node.course_id === focusId));
+        button.append(element("span", node.name), element("small", placements(node) || "개설 학기 확인 필요"));
+        button.addEventListener("click", () => selectCourse(node.course_id));
+        list.append(button);
+    }
+    if (!visible.length) list.append(element("p", "검색 결과가 없습니다.", "muted"));
+}
+function graphNode(svg, node, x, y, isFocus) {
+    const width = 252, height = 76;
+    const group = svgElement("g", {class: "node" + (isFocus ? " focus" : ""), tabindex: "0", role: "button", "aria-label": node.name + " 연결 보기"});
+    group.append(svgElement("rect", {x, y, width, height, rx: 9}));
+    const title = svgElement("text", {x: x + 16, y: y + 29});
+    title.textContent = node.name;
+    if (node.name.length > 16) title.setAttribute("style", "font-size:12px");
+    group.append(title);
+    const semester = svgElement("text", {x: x + 16, y: y + 53, class: "placement"});
+    semester.textContent = placements(node);
+    group.append(semester);
+    group.addEventListener("click", () => selectCourse(node.course_id));
+    group.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            selectCourse(node.course_id);
+        }
+    });
+    svg.append(group);
+}
+function drawGraph(focus, before, after) {
+    const width = 1000;
+    const rows = Math.max(before.length, after.length, 1);
+    const height = Math.max(380, rows * 96 + 110);
+    const centerY = height / 2 - 38;
+    const svg = svgElement("svg", {viewBox: "0 0 " + width + " " + height, role: "group", "aria-label": focus.name + "의 과목 연결 지도"});
+    const defs = svgElement("defs", {});
+    const marker = svgElement("marker", {id: "arrow", markerWidth: 8, markerHeight: 8, refX: 7, refY: 4, orient: "auto", markerUnits: "userSpaceOnUse"});
+    marker.append(svgElement("path", {d: "M0,0 L8,4 L0,8 Z", fill: "#789b84"}));
+    defs.append(marker);
+    svg.append(defs);
+    [["먼저 연결되는 과목", 40], ["선택한 과목", 374], ["이후 연결되는 과목", 708]].forEach(([text, x]) => {
+        const label = svgElement("text", {x, y: 38, class: "column-label"});
+        label.textContent = text;
+        svg.append(label);
+    });
+    function side(edges, isBefore) {
+        const x = isBefore ? 40 : 708;
+        const totalHeight = edges.length * 96 - 20;
+        const top = Math.max(76, (height - totalHeight) / 2);
+        edges.forEach((edge, index) => {
+            const y = top + index * 96;
+            const x1 = isBefore ? x + 252 : 626;
+            const y1 = isBefore ? y + 38 : centerY + 38;
+            const x2 = isBefore ? 374 : x;
+            const y2 = isBefore ? centerY + 38 : y + 38;
+            const mid = (x1 + x2) / 2;
+            const path = svgElement("path", {
+                d: "M" + x1 + "," + y1 + " C" + mid + "," + y1 + " " + mid + "," + y2 + " " + x2 + "," + y2,
+                class: "edge " + (edge.official_prerequisite ? "official" : "recommended"),
+                "marker-end": "url(#arrow)"
+            });
+            const title = svgElement("title", {});
+            title.textContent = edge.reason || "";
+            path.append(title);
+            svg.append(path);
+        });
+        edges.forEach((edge, index) => graphNode(svg, nodes.get(isBefore ? edge.from_course_id : edge.to_course_id), x, top + index * 96, false));
+        if (!edges.length) {
+            const label = svgElement("text", {x: x + 22, y: centerY + 43, class: "empty"});
+            label.textContent = "등록된 연결이 없습니다.";
+            svg.append(label);
+        }
+    }
+    side(before, true);
+    side(after, false);
+    graphNode(svg, focus, 374, centerY, true);
+    document.getElementById("graph").replaceChildren(svg);
+}
+function relationGroup(title, edges, isBefore) {
+    const group = element("div", undefined, "relation-group");
+    group.append(element("h4", title));
+    for (const edge of edges) {
+        const node = nodes.get(isBefore ? edge.from_course_id : edge.to_course_id);
+        const item = element("article", undefined, "relation-item");
+        const button = element("button", node.name, "relation-name");
+        button.type = "button";
+        button.addEventListener("click", () => selectCourse(node.course_id));
+        item.append(button, element("span", edge.official_prerequisite ? "공식 선수 관계" : "시연용 추천", "relation-type"));
+        item.append(element("p", edge.reason || "연결 근거 확인 필요", "reason"));
+        const contexts = (edge.evidence || []).map(e => e.context).filter(Boolean);
+        if (contexts.length) item.append(element("p", contexts.join(" · "), "source"));
+        group.append(item);
+    }
+    if (!edges.length) group.append(element("p", "등록된 연결이 없습니다.", "muted"));
+    return group;
+}
+function render() {
+    renderList();
+    const focus = nodes.get(focusId);
+    if (!focus) return;
+    const before = eligibleEdges(incoming.get(focusId), "from_course_id");
+    const after = eligibleEdges(outgoing.get(focusId), "to_course_id");
+    document.getElementById("focus-title").textContent = focus.name;
+    const trackNames = (focus.tracks || []).map(id => tracks.get(id) || id);
+    document.getElementById("focus-meta").textContent = [placements(focus), trackNames.join(" · ") || "공통·프로그래밍 교과"].filter(Boolean).join("  /  ");
+    document.getElementById("relation-note").textContent = trackId
+        ? "선택한 전공과 공통·프로그래밍 교과의 연결을 표시합니다. 점선은 시연용 추천 학습 순서입니다."
+        : "점선은 시연용 추천 학습 순서입니다. 각 연결의 근거를 확인하고 학습 방향을 선택할 수 있습니다.";
+    drawGraph(focus, before, after);
+    document.getElementById("relations").replaceChildren(
+        relationGroup("이 과목을 배우기 전에 살펴볼 과목", before, true),
+        relationGroup("이 과목에서 이어서 살펴볼 과목", after, false)
+    );
+}
+for (const track of data.tracks) {
+    const option = element("option", track.name);
+    option.value = track.track_id;
+    trackInput.append(option);
+}
+trackInput.addEventListener("change", () => {
+    trackId = trackInput.value;
+    if (!matchesTrack(nodes.get(focusId))) {
+        focusId = data.nodes.filter(matchesTrack).sort(courseOrder)[0]?.course_id;
+    }
+    render();
+});
+searchInput.addEventListener("input", renderList);
+document.getElementById("download").addEventListener("click", () => {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2) + "\n"], {type:"application/json;charset=utf-8"}));
+    const anchor = element("a");
+    anchor.href = url;
+    anchor.download = "ssu_ai_software_2026.json";
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+});
+if (typeof data.title === "string") document.getElementById("page-title").textContent = data.title;
+render();
+})();
+</script>
+</body>
+</html>

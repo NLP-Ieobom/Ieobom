@@ -1,0 +1,4868 @@
+{
+  "schema_version": "1.0",
+  "graph_id": "ssu-ai-software-2026-recommended",
+  "title": "숭실대학교 AI소프트웨어학부 과목 학습 연결 초안",
+  "institution": "숭실대학교",
+  "department": "AI소프트웨어학부",
+  "curriculum_entry_year": 2026,
+  "syllabus_academic_year": 2026,
+  "status": "provisional",
+  "relation_semantics": {
+    "relation": "prepares_for",
+    "source": "recommended",
+    "official_prerequisite": false,
+    "description": "앞 과목의 지식·경험이 뒤 과목 학습에 도움이 될 수 있다는 프로젝트용 추천이다.",
+    "incoming_edges_mean": "alternative_or_complementary_preparation",
+    "all_incoming_required": false,
+    "official_registration_constraint": false,
+    "order_is_official": false,
+    "inference_notice": "공식 교과과정은 과목·배치·분야의 근거이며 관계 화살표는 교육 내용에 근거해 구성한 초안이다. 강의계획서의 선수권장과목을 참고한 연결도 수강 필수 조건으로 해석하지 않는다."
+  },
+  "source_path_base": "ieobom-ssu-corpus",
+  "tracks": [
+    {
+      "track_id": "software",
+      "name": "소프트웨어",
+      "designation_course_ids": [
+        "ssu:21501656",
+        "ssu:21501657",
+        "ssu:21501658",
+        "ssu:21501666",
+        "ssu:ai-software:curriculum:분산컴퓨팅",
+        "ssu:21501667"
+      ],
+      "source_id": "curriculum-pdf-2026",
+      "source_page": 1
+    },
+    {
+      "track_id": "ai-systems",
+      "name": "AI시스템",
+      "designation_course_ids": [
+        "ssu:21501662",
+        "ssu:21501658",
+        "ssu:21501671",
+        "ssu:21501672",
+        "ssu:21501686"
+      ],
+      "source_id": "curriculum-pdf-2026",
+      "source_page": 1
+    },
+    {
+      "track_id": "artificial-intelligence",
+      "name": "인공지능",
+      "designation_course_ids": [
+        "ssu:21501661",
+        "ssu:21501670",
+        "ssu:21501660",
+        "ssu:21501684",
+        "ssu:21501695"
+      ],
+      "source_id": "curriculum-pdf-2026",
+      "source_page": 1
+    },
+    {
+      "track_id": "information-security",
+      "name": "정보보호",
+      "designation_course_ids": [
+        "ssu:21501659",
+        "ssu:21501668",
+        "ssu:21501669",
+        "ssu:21501678",
+        "ssu:21501679",
+        "ssu:21501682",
+        "ssu:21501693"
+      ],
+      "source_id": "curriculum-pdf-2026",
+      "source_page": 1
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "curriculum-pdf-2026",
+      "title": "AI소프트웨어학부 2026학년도 입학생 기준 교과과정",
+      "url": "https://ai.ssu.ac.kr/api-server/resource/download/327",
+      "kind": "official_curriculum_pdf",
+      "corpus_path": "curriculum/ssu-ai-software-curriculum-entry-2026.pdf",
+      "sha256": "5d0e8510200383cdd64ba37d5c4faa6be44b76829f12f88dcbb874659c20c013"
+    },
+    {
+      "source_id": "curriculum-website",
+      "title": "숭실대학교 AI소프트웨어학부 교과과정",
+      "url": "https://ai.ssu.ac.kr/guide/curriculum",
+      "kind": "official_website"
+    },
+    {
+      "source_id": "corpus-course-index-2026",
+      "title": "2026 공식 교과과정과 U-SAINT 개설 과목 대조 결과",
+      "kind": "verified_corpus_index",
+      "corpus_path": "data/courses.json",
+      "sha256": "45d591a5b5dab842e423b567845ed33d64d7cf8ea4ce5eedfb72fbf4ff804dca",
+      "context": "52개 공식 과목 중 49개는 2026 U-SAINT 개설 과목의 현재 코드와 연결되어 있다. 나머지 3개에 현재 코드를 추정해 부여하지 않았다."
+    },
+    {
+      "source_id": "syllabus-21501614",
+      "title": "U-SAINT 프로그래밍기초1 강의계획서 (2150161401)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501614",
+      "syllabus_id": "ssu:21501614:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501614.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150161401.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501614.json",
+      "document_id": "c86dfd85337a9458c77c5b2b5412c35feed80c3ae1970beaaf55e07c2bd53bc4",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501616",
+      "title": "U-SAINT 프로그래밍기초2 강의계획서 (2150161601)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501616",
+      "syllabus_id": "ssu:21501616:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501616.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150161601.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501616.json",
+      "document_id": "a2c98c9d269259c2249f751d9bad408cfb64976803da4d43ad0019a219546ac5",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501622",
+      "title": "U-SAINT 기초AI수학 강의계획서 (2150162201)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501622",
+      "syllabus_id": "ssu:21501622:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501622.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150162201.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501622.json",
+      "document_id": "42a35ed56781b9666979d88b011c0a0791eafbccefb80972d3ce7f77c0ed3a90",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501623",
+      "title": "U-SAINT 이산수학 강의계획서 (2150162301)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501623",
+      "syllabus_id": "ssu:21501623:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501623.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150162301.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501623.json",
+      "document_id": "ce46ddb8a2f3adfeea9a091433517ae6048ef21fe1dca227dc86a3b4177e5f12",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501624",
+      "title": "U-SAINT 창의적공학설계 강의계획서 (2150162402)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501624",
+      "syllabus_id": "ssu:21501624:2026-fall:02",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "02"
+      },
+      "corpus_path": "data/syllabi/21501624.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150162402.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501624.json",
+      "document_id": "6cd4b5a6de8b75a5f64a1e6ed9b28fd8360940890ef824841f46030bc610f5f7",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501627",
+      "title": "U-SAINT 오픈소스기초설계 강의계획서 (2150162701)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501627",
+      "syllabus_id": "ssu:21501627:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501627.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150162701.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501627.json",
+      "document_id": "15fbddb1781790a256b52ab21094b06641beab99685e2e3fdf9eb30fdb92265b",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501628",
+      "title": "U-SAINT 인공지능입문 강의계획서 (2150162801)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501628",
+      "syllabus_id": "ssu:21501628:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501628.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150162801.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501628.json",
+      "document_id": "f46079cb6dd4a752a6cd21d4accb183609d2e6224223c2be3cf0ad248bdb6906",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501631",
+      "title": "U-SAINT 확률및통계 강의계획서 (2150163102)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501631",
+      "syllabus_id": "ssu:21501631:2026-fall:02",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "02"
+      },
+      "corpus_path": "data/syllabi/21501631.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150163102.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501631.json",
+      "document_id": "32852ff1d9356e0f4b94f0d46c2df3318a25a53085f99be253e0a3f5484940d3",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501632",
+      "title": "U-SAINT 자료구조 강의계획서 (2150163202)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501632",
+      "syllabus_id": "ssu:21501632:2026-fall:02",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "02"
+      },
+      "corpus_path": "data/syllabi/21501632.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150163202.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501632.json",
+      "document_id": "1fe8af16f0b4b8513fdc5af2b891803e65813069e7edf0272b1ba32d4fc1ec08",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501633",
+      "title": "U-SAINT 알고리즘 강의계획서 (2150163301)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501633",
+      "syllabus_id": "ssu:21501633:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501633.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150163301.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501633.json",
+      "document_id": "8dd394d1e43c9d16e31d176b4bd598e505cc415b74946c3fdfccfb9d63fe5211",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501637",
+      "title": "U-SAINT 머신러닝 강의계획서 (2150163701)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501637",
+      "syllabus_id": "ssu:21501637:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501637.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150163701.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501637.json",
+      "document_id": "f7324cb04d676cb66f1194ad4349d6399d76e6e3ec691ee9a99ead6b262e4dff",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501638",
+      "title": "U-SAINT 컴퓨터구조 강의계획서 (2150163801)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501638",
+      "syllabus_id": "ssu:21501638:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501638.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150163801.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501638.json",
+      "document_id": "6bf4353c65dd4f7e8aadc80d51c3fe703d58d53965362a2784c83e280f82f4b4",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501640",
+      "title": "U-SAINT 고급AI수학 강의계획서 (2150164001)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501640",
+      "syllabus_id": "ssu:21501640:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501640.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150164001.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501640.json",
+      "document_id": "cd03083b20a1023791bd669c63ad550d12a55779c300e3dd64859c8c2519046f",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501641",
+      "title": "U-SAINT 고급프로그래밍 강의계획서 (2150164101)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501641",
+      "syllabus_id": "ssu:21501641:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501641.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150164101.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501641.json",
+      "document_id": "f276890f4622ef0927d99dc13d264a75c5becaa9e593d9893919dfb06fc5a847",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501642",
+      "title": "U-SAINT 디지털시스템입문 강의계획서 (2150164201)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501642",
+      "syllabus_id": "ssu:21501642:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501642.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150164201.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501642.json",
+      "document_id": "056d8aaf07b785d8f5736d4b3c5aa764c5f2ae5f9952079a32317cd25bb3400e",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501643",
+      "title": "U-SAINT 데이터통신과네트워크 강의계획서 (2150164301)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501643",
+      "syllabus_id": "ssu:21501643:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501643.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150164301.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501643.json",
+      "document_id": "636c63c593c823487fcb5d7af96feded0dbc3ed7a31ec9e131734c7b9226a288",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501644",
+      "title": "U-SAINT 자율주행프로그래밍 강의계획서 (2150164401)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501644",
+      "syllabus_id": "ssu:21501644:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501644.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150164401.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501644.json",
+      "document_id": "51b8988e8e9ba19858b24b7450b4532e7f1a1595514186a00d0072302190f69b",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501649",
+      "title": "U-SAINT 웹프로그래밍 강의계획서 (2150164901)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501649",
+      "syllabus_id": "ssu:21501649:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501649.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150164901.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501649.json",
+      "document_id": "a1887f7d309c511d4e91661683576bdcde9a046bbf22c5bedcb69c065a6223a1",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501654",
+      "title": "U-SAINT 운영체제 강의계획서 (2150165401)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501654",
+      "syllabus_id": "ssu:21501654:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501654.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150165401.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501654.json",
+      "document_id": "db1efd46d39708eb7ce49e2199b490de3667598d26fd3e9731d82547bcf9bc6f",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501658",
+      "title": "U-SAINT 시스템프로그래밍 강의계획서 (2150165801)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501658",
+      "syllabus_id": "ssu:21501658:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501658.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150165801.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501658.json",
+      "document_id": "3d3efe82bc2ac0d0411a45ebfe8f8ff34e93d48a3eccd5344b8ae85325317ed5",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501656",
+      "title": "U-SAINT 데이터베이스 강의계획서 (2150165601)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501656",
+      "syllabus_id": "ssu:21501656:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501656.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150165601.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501656.json",
+      "document_id": "4083db75734178633ceb30b1ffa7d874e04c62cd9b4ce11e10b029fc68ab0e90",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501657",
+      "title": "U-SAINT 네트워크 강의계획서 (2150165701)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501657",
+      "syllabus_id": "ssu:21501657:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501657.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150165701.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501657.json",
+      "document_id": "ca71a98eb208d96fb5015018f44037f238bee62e7035a87ee36899fa48a89724",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501660",
+      "title": "U-SAINT 데이터사이언스 강의계획서 (2150166001)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501660",
+      "syllabus_id": "ssu:21501660:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501660.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150166001.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501660.json",
+      "document_id": "f5c2bb0fa2124a3eb0d780bc882b4c2c9daa08a5c716705acd966c6e8e501c14",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501661",
+      "title": "U-SAINT 딥러닝프로그래밍 강의계획서 (2150166101)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501661",
+      "syllabus_id": "ssu:21501661:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501661.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150166101.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501661.json",
+      "document_id": "d0b0154e33722567cbe82c470dae019ca07125bcd813432bfeb222069bade65c",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501662",
+      "title": "U-SAINT 로봇프로그래밍 강의계획서 (2150166201)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501662",
+      "syllabus_id": "ssu:21501662:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501662.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150166201.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501662.json",
+      "document_id": "781b736bb027b4964d39813e1b4e2957c273200f4ec33c376e7e969706dfd1c8",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501659",
+      "title": "U-SAINT 암호응용 강의계획서 (2150165901)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501659",
+      "syllabus_id": "ssu:21501659:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501659.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150165901.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501659.json",
+      "document_id": "f3b9f8e3e77a18e49b483d5a4898c4125e946a2db49e2d6b533bc74e6cb7971b",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501650",
+      "title": "U-SAINT 빅데이터분석 강의계획서 (2150165001)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501650",
+      "syllabus_id": "ssu:21501650:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501650.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150165001.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501650.json",
+      "document_id": "714d3c599b2639d01bb16cbac7676d8515ff662fde7e0c2c2cc8d3f3f839beaa",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501653",
+      "title": "U-SAINT 프로그래밍언어 강의계획서 (2150165301)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501653",
+      "syllabus_id": "ssu:21501653:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501653.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150165301.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501653.json",
+      "document_id": "24c1284094d140d13a23af4f71edcc74dd1eec77d529b0328e9ec52e810cf251",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501666",
+      "title": "U-SAINT 소프트웨어분석및설계 강의계획서 (2150166601)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501666",
+      "syllabus_id": "ssu:21501666:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501666.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150166601.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501666.json",
+      "document_id": "bbced14c6521a12e1c6fbdc6ed35d505eebca61ef29418f86ceee9a7a357630d",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501667",
+      "title": "U-SAINT 데이터베이스응용 강의계획서 (2150166701)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501667",
+      "syllabus_id": "ssu:21501667:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501667.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150166701.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501667.json",
+      "document_id": "663b6d4ac4ca3e2401cc175342e4fc33de9fa0f60481b40cabc7f44b1c69bfc5",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501670",
+      "title": "U-SAINT 자연언어처리 강의계획서 (2150167001)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501670",
+      "syllabus_id": "ssu:21501670:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501670.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150167001.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501670.json",
+      "document_id": "ed5d2d9379c4c7a63bd3d5c59bee8a0dd2b225711341b40f9108f0a8dd367891",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501671",
+      "title": "U-SAINT 온디바이스AI 강의계획서 (2150167101)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501671",
+      "syllabus_id": "ssu:21501671:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501671.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150167101.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501671.json",
+      "document_id": "a5729b91f08e8f577df54fc6aca6a31ee8ad4f79e10370203ef1eb53f43fbf8e",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501672",
+      "title": "U-SAINT 클라우드AIoT 강의계획서 (2150167201)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501672",
+      "syllabus_id": "ssu:21501672:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501672.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150167201.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501672.json",
+      "document_id": "daf0d7ce381af89db4f63e718f46fe89dafe890cf3e0d66bc0034476bffdaf38",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501668",
+      "title": "U-SAINT AI보안 강의계획서 (2150166801)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501668",
+      "syllabus_id": "ssu:21501668:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501668.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150166801.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501668.json",
+      "document_id": "12f69c37a648d719ae59c9e2cb2009079cf8d7bc56ae1f3bf5fd41c7cc0c434c",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501669",
+      "title": "U-SAINT 디지털포렌식개론 강의계획서 (2150166901)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501669",
+      "syllabus_id": "ssu:21501669:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501669.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150166901.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501669.json",
+      "document_id": "b80e6335de53e9fbac253e323e461f3d91825fb01760e076582d8c1adb4f939b",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501665",
+      "title": "U-SAINT 컴파일러 강의계획서 (2150166501)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501665",
+      "syllabus_id": "ssu:21501665:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501665.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150166501.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501665.json",
+      "document_id": "20ee89faa2dd895b1742dbf8efede3ebf2a397c569880f1630d34a857401027f",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501663",
+      "title": "U-SAINT 모바일프로그래밍 강의계획서 (2150166301)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501663",
+      "syllabus_id": "ssu:21501663:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501663.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150166301.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501663.json",
+      "document_id": "c86e8e721d013cc29878f85aa42b44fd53244c4f652df5e35cec2ba9704e4b88",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501684",
+      "title": "U-SAINT 컴퓨터비전 강의계획서 (2150168401)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501684",
+      "syllabus_id": "ssu:21501684:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501684.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150168401.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501684.json",
+      "document_id": "d90124afb21caecae371c372096576f359c8b35d48886000f5df3c4a73f92093",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501686",
+      "title": "U-SAINT AI가속기 강의계획서 (2150168601)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501686",
+      "syllabus_id": "ssu:21501686:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501686.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150168601.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501686.json",
+      "document_id": "048692106c83ad863d199a5c5b0e3cfd78ad4c204d994a60902f4659cad936df",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501678",
+      "title": "U-SAINT 시스템보안 강의계획서 (2150167801)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501678",
+      "syllabus_id": "ssu:21501678:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501678.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150167801.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501678.json",
+      "document_id": "e2f67f4a6714e83b40d7c576aa68a753b8a77766531b3041e8c5d6fad8b82484",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501679",
+      "title": "U-SAINT 네트워크보안 강의계획서 (2150167901)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501679",
+      "syllabus_id": "ssu:21501679:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501679.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150167901.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501679.json",
+      "document_id": "a37a242c9c7ea5d4800afbb13dec1457728b5d6bf42b87333454904de864007d",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501682",
+      "title": "U-SAINT 정보보호프로젝트1 강의계획서 (2150168201)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501682",
+      "syllabus_id": "ssu:21501682:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501682.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150168201.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501682.json",
+      "document_id": "b344103fd7661f0e0b5fb77529a3797e567badcb2f7b482a3f98b0c202cf0718",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501674",
+      "title": "U-SAINT 소프트웨어특강1 강의계획서 (2150167401)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501674",
+      "syllabus_id": "ssu:21501674:2026-spring:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "spring",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501674.json",
+      "pdf_corpus_path": "sources/syllabi/spring/2150167401.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501674.json",
+      "document_id": "b222424658effc3d314f36659e317aaf238a92128a4fd0a75ed145669e84b5b0",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501675",
+      "title": "U-SAINT 캡스톤디자인 강의계획서 (2150167501)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501675",
+      "syllabus_id": "ssu:21501675:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501675.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150167501.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501675.json",
+      "document_id": "61f23bb8cc0bee87cc42550b84606c87403f08f56dfc05e71bb6d872c031fe8f",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501676",
+      "title": "U-SAINT 고급캡스톤디자인 강의계획서 (2150167601)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501676",
+      "syllabus_id": "ssu:21501676:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501676.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150167601.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501676.json",
+      "document_id": "f0ccccbb3636f5a6eb6d3df6617de35eaa07e1bd4e9ec0add57b4798c044f781",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501695",
+      "title": "U-SAINT 멀티모달딥러닝 강의계획서 (2150169501)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501695",
+      "syllabus_id": "ssu:21501695:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501695.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150169501.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501695.json",
+      "document_id": "66644406f7f1c8196cd01488ca4778b95ad9b103f666f1f8a959065304144cee",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501693",
+      "title": "U-SAINT 정보보호프로젝트2 강의계획서 (2150169301)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501693",
+      "syllabus_id": "ssu:21501693:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501693.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150169301.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501693.json",
+      "document_id": "9e6a9ed7ed74b4c5a04ff85b283cfb676c6d8b00f5348481c06fa5b049d37fc8",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501691",
+      "title": "U-SAINT 클라우드컴퓨팅 강의계획서 (2150169101)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501691",
+      "syllabus_id": "ssu:21501691:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501691.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150169101.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501691.json",
+      "document_id": "a096e1670dc9441ab3daad967a46d3957268ce83bab7d04549fe8eacbe4b356f",
+      "extraction_verification_status": "needs_review"
+    },
+    {
+      "source_id": "syllabus-21501690",
+      "title": "U-SAINT 소프트웨어특강2 강의계획서 (2150169001)",
+      "kind": "captured_u_saint_syllabus",
+      "url": "https://saint.ssu.ac.kr/irj/portal",
+      "course_id": "ssu:21501690",
+      "syllabus_id": "ssu:21501690:2026-fall:01",
+      "term": {
+        "academic_year": 2026,
+        "semester": "fall",
+        "section": "01"
+      },
+      "corpus_path": "data/syllabi/21501690.json",
+      "pdf_corpus_path": "sources/syllabi/fall/2150169001.pdf",
+      "evidence_corpus_path": "data/syllabus-evidence/21501690.json",
+      "document_id": "b178cad4f22233969379dc51f16374f39f9e717c99f1b579c76bfb2102af3c31",
+      "extraction_verification_status": "needs_review"
+    }
+  ],
+  "coverage": {
+    "official_course_count": 52,
+    "node_count": 52,
+    "placement_count": 64,
+    "verified_current_code_count": 49,
+    "curriculum_only_id_count": 3,
+    "edge_count": 67,
+    "isolated_node_count": 0,
+    "track_count": 4,
+    "directed_acyclic": true,
+    "transitively_redundant_edge_count": 1,
+    "basis_counts": {
+      "syllabus_recommendation": 10,
+      "syllabus_content_inference": 40,
+      "syllabus_recommendation_mapped": 5,
+      "curriculum_topic_inference": 7,
+      "project_topic_option": 4,
+      "project_extension_inference": 1
+    }
+  },
+  "notes": [
+    "공식 2026 입학생 교과과정의 52개 과목만 포함한다. 웹에만 추가된 Co-op 과목 2개는 포함하지 않는다.",
+    "반복 배치된 과목은 노드를 중복 생성하지 않고 64개 학년·학기 배치를 placements에 보존한다.",
+    "네 트랙은 공식 교과과정의 분야 표기를 따른다. 공통·프로그래밍·기초 과목의 tracks는 빈 배열이며 공식 분야는 official_areas에 보존한다.",
+    "서버프로그래밍·분산컴퓨팅·빅데이터컴퓨팅은 2026 개설 과목에서 현재 코드를 확인하지 못해 기존의 안정적인 curriculum ID를 유지한다.",
+    "과거 코드와 과목명은 aliases에만 보존하며 현재 코드로 사용하지 않는다.",
+    "교과과정 표의 같은 학기 배치는 엄격한 수강 순서를 뜻하지 않는다. 이 그래프는 추천 학습 관계를 표현한다.",
+    "특강과 프로젝트의 내용·순서는 분반과 학기에 따라 달라질 수 있다. 숫자 1·2라는 이유만으로 자동 연결하지 않았다.",
+    "학습 내용에서 추론한 연결과 강의계획서의 선수권장과목을 참고한 연결을 basis로 구분한다. confidence는 프로젝트의 추천 근거 수준이며 공식 승인 여부가 아니다.",
+    "강의계획서 추출물은 needs_review 상태가 남아 있으므로 corpus의 원본 PDF와 페이지 근거로 재검토할 수 있다."
+  ],
+  "nodes": [
+    {
+      "course_id": "ssu:21501614",
+      "curriculum_id": "ssu:ai-software:curriculum:프로그래밍기초1",
+      "course_code": "21501614",
+      "name": "프로그래밍기초1",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "프로그래밍"
+      ],
+      "group": "programming",
+      "placements": [
+        {
+          "year": 1,
+          "semester": 1,
+          "classification": "전공기초",
+          "depth": null,
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "year": 1,
+          "semester": 2,
+          "classification": "전공기초",
+          "depth": null,
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "프로그래밍 기초 및 실습",
+          "legacy_course_code": "21506742",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "name": "프로그래밍 기초 및 실습",
+          "legacy_course_code": "21506741",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501614"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501614:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501616",
+      "curriculum_id": "ssu:ai-software:curriculum:프로그래밍기초2",
+      "course_code": "21501616",
+      "name": "프로그래밍기초2",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "프로그래밍"
+      ],
+      "group": "programming",
+      "placements": [
+        {
+          "year": 1,
+          "semester": 1,
+          "classification": "전공기초",
+          "depth": null,
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "year": 1,
+          "semester": 2,
+          "classification": "전공기초",
+          "depth": null,
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "프로그래밍 응용 및 실습",
+          "legacy_course_code": "21506792",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "name": "프로그래밍 응용 및 실습",
+          "legacy_course_code": "21506798",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501616"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501616:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501622",
+      "curriculum_id": "ssu:ai-software:curriculum:기초AI수학",
+      "course_code": "21501622",
+      "name": "기초 AI 수학",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 1,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": null,
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "기초 AI 수학",
+          "legacy_course_code": "21506797",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501622"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501622:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:21501623",
+      "curriculum_id": "ssu:ai-software:curriculum:이산수학",
+      "course_code": "21501623",
+      "name": "이산수학",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 1,
+          "semester": 2,
+          "classification": "전공기초",
+          "depth": null,
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "이산수학",
+          "legacy_course_code": "21506794",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "name": "이산수학",
+          "legacy_course_code": "21506866",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501623"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501623:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501624",
+      "curriculum_id": "ssu:ai-software:curriculum:창의적공학설계",
+      "course_code": "21501624",
+      "name": "창의적공학설계",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [],
+      "group": "foundation",
+      "placements": [
+        {
+          "year": 1,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": null,
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "창의적공학설계",
+          "legacy_course_code": "21506793",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501624"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501624:2026-fall:02"
+    },
+    {
+      "course_id": "ssu:21501627",
+      "curriculum_id": "ssu:ai-software:curriculum:오픈소스기초설계",
+      "course_code": "21501627",
+      "name": "오픈소스기초설계",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [],
+      "group": "foundation",
+      "placements": [
+        {
+          "year": 1,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": null,
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "리눅스시스템관리",
+          "legacy_course_code": "21506743",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "name": "오픈소스기초설계",
+          "legacy_course_code": "21500545",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501627"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501627:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501628",
+      "curriculum_id": "ssu:ai-software:curriculum:인공지능입문",
+      "course_code": "21501628",
+      "name": "인공지능입문",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [],
+      "group": "foundation",
+      "placements": [
+        {
+          "year": 1,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": null,
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "인공지능입문",
+          "legacy_course_code": "21500310",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501628"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501628:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501631",
+      "curriculum_id": "ssu:ai-software:curriculum:확률및통계",
+      "course_code": "21501631",
+      "name": "확률 및 통계",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 2,
+          "semester": 1,
+          "classification": "전공기초",
+          "depth": null,
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "year": 2,
+          "semester": 2,
+          "classification": "전공기초",
+          "depth": null,
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "확률및통계",
+          "legacy_course_code": "21506744",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "name": "확률및통계",
+          "legacy_course_code": "21500145",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501631"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501631:2026-fall:02"
+    },
+    {
+      "course_id": "ssu:21501632",
+      "curriculum_id": "ssu:ai-software:curriculum:자료구조",
+      "course_code": "21501632",
+      "name": "자료구조",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 2,
+          "semester": 1,
+          "classification": "전공필수",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "year": 2,
+          "semester": 2,
+          "classification": "전공필수",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "자료구조",
+          "legacy_course_code": "21506862",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "name": "자료구조",
+          "legacy_course_code": "21506911",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501632"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501632:2026-fall:02"
+    },
+    {
+      "course_id": "ssu:21501633",
+      "curriculum_id": "ssu:ai-software:curriculum:알고리즘",
+      "course_code": "21501633",
+      "name": "알고리즘",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 2,
+          "semester": 1,
+          "classification": "전공필수",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "year": 2,
+          "semester": 2,
+          "classification": "전공필수",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "알고리즘",
+          "legacy_course_code": "21506907",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "name": "알고리즘",
+          "legacy_course_code": "21500140",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501633"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501633:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501637",
+      "curriculum_id": "ssu:ai-software:curriculum:머신러닝",
+      "course_code": "21501637",
+      "name": "머신러닝",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 2,
+          "semester": 1,
+          "classification": "전공필수",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "year": 2,
+          "semester": 2,
+          "classification": "전공필수",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "머신러닝",
+          "legacy_course_code": "21500532",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "name": "머신러닝",
+          "legacy_course_code": "21500761",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501637"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501637:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501638",
+      "curriculum_id": "ssu:ai-software:curriculum:컴퓨터구조",
+      "course_code": "21501638",
+      "name": "컴퓨터구조",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 2,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "컴퓨터구조",
+          "legacy_course_code": "21506863",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "name": "컴퓨터구조",
+          "legacy_course_code": "21506913",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501638"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501638:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:21501640",
+      "curriculum_id": "ssu:ai-software:curriculum:고급AI수학",
+      "course_code": "21501640",
+      "name": "고급AI수학",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 2,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "선형대수",
+          "legacy_course_code": "21506865",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "name": "고급AI수학",
+          "legacy_course_code": "21506915",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501640"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501640:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:21501641",
+      "curriculum_id": "ssu:ai-software:curriculum:고급프로그래밍",
+      "course_code": "21501641",
+      "name": "고급프로그래밍",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "프로그래밍"
+      ],
+      "group": "programming",
+      "placements": [
+        {
+          "year": 2,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "객체지향프로그래밍및실습",
+          "legacy_course_code": "21506864",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        },
+        {
+          "name": "고급프로그래밍및실습",
+          "legacy_course_code": "21506967",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501641"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501641:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:21501642",
+      "curriculum_id": "ssu:ai-software:curriculum:디지털시스템입문",
+      "course_code": "21501642",
+      "name": "디지털시스템입문",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 2,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "디지털시스템입문",
+          "legacy_course_code": "21506869",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501642"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501642:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501643",
+      "curriculum_id": "ssu:ai-software:curriculum:데이터통신과네트워크",
+      "course_code": "21501643",
+      "name": "데이터통신과 네트워크",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 2,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "데이터통신과네트워크",
+          "legacy_course_code": "21506908",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501643"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501643:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501644",
+      "curriculum_id": "ssu:ai-software:curriculum:자율주행프로그래밍",
+      "course_code": "21501644",
+      "name": "자율주행프로그래밍",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "프로그래밍"
+      ],
+      "group": "programming",
+      "placements": [
+        {
+          "year": 2,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "자율주행프로그래밍",
+          "legacy_course_code": "21500764",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501644"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501644:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501649",
+      "curriculum_id": "ssu:ai-software:curriculum:웹프로그래밍",
+      "course_code": "21501649",
+      "name": "웹프로그래밍",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "프로그래밍"
+      ],
+      "group": "programming",
+      "placements": [
+        {
+          "year": 2,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "aliases": [
+        {
+          "name": "웹프로그래밍",
+          "legacy_course_code": "21500301",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 2
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501649"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501649:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501654",
+      "curriculum_id": "ssu:ai-software:curriculum:운영체제",
+      "course_code": "21501654",
+      "name": "운영체제",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 1,
+          "classification": "전공필수",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        },
+        {
+          "year": 3,
+          "semester": 2,
+          "classification": "전공필수",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "운영체제",
+          "legacy_course_code": "21500344",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        },
+        {
+          "name": "운영체제",
+          "legacy_course_code": "21500141",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501654"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501654:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501658",
+      "curriculum_id": "ssu:ai-software:curriculum:시스템프로그래밍",
+      "course_code": "21501658",
+      "name": "시스템프로그래밍",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "software",
+        "ai-systems"
+      ],
+      "official_areas": [
+        "소프트웨어",
+        "AI시스템"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        },
+        {
+          "year": 3,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "시스템프로그래밍",
+          "legacy_course_code": "21500134",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        },
+        {
+          "name": "시스템프로그래밍",
+          "legacy_course_code": "21506912",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501658"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501658:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501656",
+      "curriculum_id": "ssu:ai-software:curriculum:데이터베이스",
+      "course_code": "21501656",
+      "name": "데이터베이스",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "software"
+      ],
+      "official_areas": [
+        "소프트웨어"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "데이터베이스",
+          "legacy_course_code": "21500132",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        },
+        {
+          "name": "데이터베이스",
+          "legacy_course_code": "21500759",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501656"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501656:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:21501657",
+      "curriculum_id": "ssu:ai-software:curriculum:네트워크",
+      "course_code": "21501657",
+      "name": "네트워크",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "software"
+      ],
+      "official_areas": [
+        "소프트웨어"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        },
+        {
+          "year": 3,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "네트워크프로그래밍",
+          "legacy_course_code": "21500131",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        },
+        {
+          "name": "네트워크",
+          "legacy_course_code": "21500758",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501657"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501657:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501660",
+      "curriculum_id": "ssu:ai-software:curriculum:데이터사이언스",
+      "course_code": "21501660",
+      "name": "데이터사이언스",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "artificial-intelligence"
+      ],
+      "official_areas": [
+        "인공지능"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        },
+        {
+          "year": 3,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "데이터사이언스",
+          "legacy_course_code": "21500279",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        },
+        {
+          "name": "데이터사이언스",
+          "legacy_course_code": "21500757",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501660"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501660:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501661",
+      "curriculum_id": "ssu:ai-software:curriculum:딥러닝프로그래밍",
+      "course_code": "21501661",
+      "name": "딥러닝프로그래밍",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "artificial-intelligence"
+      ],
+      "official_areas": [
+        "인공지능"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "인공지능",
+          "legacy_course_code": "21500135",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        },
+        {
+          "name": "딥러닝프로그래밍",
+          "legacy_course_code": "21500763",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501661"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501661:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:21501662",
+      "curriculum_id": "ssu:ai-software:curriculum:로봇프로그래밍",
+      "course_code": "21501662",
+      "name": "로봇프로그래밍",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "ai-systems"
+      ],
+      "official_areas": [
+        "AI시스템"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "로봇공학개론",
+          "legacy_course_code": "21500760",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        },
+        {
+          "name": "지능형로봇및실습",
+          "legacy_course_code": "21500304",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501662"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501662:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:21501659",
+      "curriculum_id": "ssu:ai-software:curriculum:암호응용",
+      "course_code": "21501659",
+      "name": "암호응용",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "information-security"
+      ],
+      "official_areas": [
+        "정보보호"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "보안프로그래밍",
+          "legacy_course_code": "21500540",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501659"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501659:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:21501650",
+      "curriculum_id": "ssu:ai-software:curriculum:빅데이터분석",
+      "course_code": "21501650",
+      "name": "빅데이터분석",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "빅데이터분석",
+          "legacy_course_code": "21506876",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501650"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501650:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:ai-software:curriculum:서버프로그래밍",
+      "curriculum_id": "ssu:ai-software:curriculum:서버프로그래밍",
+      "course_code": null,
+      "name": "서버프로그래밍",
+      "id_status": "curriculum_only",
+      "tracks": [],
+      "official_areas": [
+        "프로그래밍"
+      ],
+      "group": "programming",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "서버프로그래밍",
+          "legacy_course_code": "21500550",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026"
+      ],
+      "syllabus_status": "not_available_in_2026_department_offerings"
+    },
+    {
+      "course_id": "ssu:21501653",
+      "curriculum_id": "ssu:ai-software:curriculum:프로그래밍언어",
+      "course_code": "21501653",
+      "name": "프로그래밍언어",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "프로그래밍"
+      ],
+      "group": "programming",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "프로그래밍언어",
+          "legacy_course_code": "21500136",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501653"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501653:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:21501666",
+      "curriculum_id": "ssu:ai-software:curriculum:소프트웨어분석및설계",
+      "course_code": "21501666",
+      "name": "소프트웨어분석 및 설계",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "software"
+      ],
+      "official_areas": [
+        "소프트웨어"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "핵심",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "소프트웨어분석및설계",
+          "legacy_course_code": "21500278",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501666"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501666:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501667",
+      "curriculum_id": "ssu:ai-software:curriculum:데이터베이스응용",
+      "course_code": "21501667",
+      "name": "데이터베이스응용",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "software"
+      ],
+      "official_areas": [
+        "소프트웨어"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "데이터베이스응용",
+          "legacy_course_code": "21500281",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501667"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501667:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501670",
+      "curriculum_id": "ssu:ai-software:curriculum:자연언어처리",
+      "course_code": "21501670",
+      "name": "자연언어처리",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "artificial-intelligence"
+      ],
+      "official_areas": [
+        "인공지능"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "자연언어처리",
+          "legacy_course_code": "21500765",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501670"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501670:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501671",
+      "curriculum_id": "ssu:ai-software:curriculum:온디바이스AI",
+      "course_code": "21501671",
+      "name": "온디바이스AI",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "ai-systems"
+      ],
+      "official_areas": [
+        "AI시스템"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "AI임베디드프로그래밍",
+          "legacy_course_code": "21500311",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501671"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501671:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501672",
+      "curriculum_id": "ssu:ai-software:curriculum:클라우드AIoT",
+      "course_code": "21501672",
+      "name": "클라우드AIoT",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "ai-systems"
+      ],
+      "official_areas": [
+        "AI시스템"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "IoT프로그래밍",
+          "legacy_course_code": "21500308",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        },
+        {
+          "name": "센서네트워크",
+          "legacy_course_code": "21500303",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501672"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501672:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501668",
+      "curriculum_id": "ssu:ai-software:curriculum:AI보안",
+      "course_code": "21501668",
+      "name": "AI보안",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "information-security"
+      ],
+      "official_areas": [
+        "정보보호"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501668"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501668:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501669",
+      "curriculum_id": "ssu:ai-software:curriculum:디지털포렌식개론",
+      "course_code": "21501669",
+      "name": "디지털포렌식개론",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "information-security"
+      ],
+      "official_areas": [
+        "정보보호"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501669"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501669:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501665",
+      "curriculum_id": "ssu:ai-software:curriculum:컴파일러",
+      "course_code": "21501665",
+      "name": "컴파일러",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "프로그래밍"
+      ],
+      "group": "programming",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "컴파일러",
+          "legacy_course_code": "21500288",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501665"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501665:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501663",
+      "curriculum_id": "ssu:ai-software:curriculum:모바일프로그래밍",
+      "course_code": "21501663",
+      "name": "모바일프로그래밍",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "프로그래밍"
+      ],
+      "group": "programming",
+      "placements": [
+        {
+          "year": 3,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "aliases": [
+        {
+          "name": "모바일프로그래밍",
+          "legacy_course_code": "21506868",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 3
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501663"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501663:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501684",
+      "curriculum_id": "ssu:ai-software:curriculum:컴퓨터비전",
+      "course_code": "21501684",
+      "name": "컴퓨터비전",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "artificial-intelligence"
+      ],
+      "official_areas": [
+        "인공지능"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [
+        {
+          "name": "컴퓨터비전",
+          "legacy_course_code": "21500285",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        },
+        {
+          "name": "컴퓨터비전",
+          "legacy_course_code": "21500549",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501684"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501684:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:21501686",
+      "curriculum_id": "ssu:ai-software:curriculum:AI가속기",
+      "course_code": "21501686",
+      "name": "AI가속기",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "ai-systems"
+      ],
+      "official_areas": [
+        "AI시스템"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [
+        {
+          "name": "GPU프로그래밍",
+          "legacy_course_code": "21500551",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501686"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501686:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:ai-software:curriculum:분산컴퓨팅",
+      "curriculum_id": "ssu:ai-software:curriculum:분산컴퓨팅",
+      "course_code": null,
+      "name": "분산컴퓨팅",
+      "id_status": "curriculum_only",
+      "tracks": [
+        "software"
+      ],
+      "official_areas": [
+        "소프트웨어"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026"
+      ],
+      "syllabus_status": "not_available_in_2026_department_offerings"
+    },
+    {
+      "course_id": "ssu:21501678",
+      "curriculum_id": "ssu:ai-software:curriculum:시스템보안",
+      "course_code": "21501678",
+      "name": "시스템보안",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "information-security"
+      ],
+      "official_areas": [
+        "정보보호"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [
+        {
+          "name": "시스템보안",
+          "legacy_course_code": "21500286",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501678"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501678:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:21501679",
+      "curriculum_id": "ssu:ai-software:curriculum:네트워크보안",
+      "course_code": "21501679",
+      "name": "네트워크보안",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "information-security"
+      ],
+      "official_areas": [
+        "정보보호"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [
+        {
+          "name": "네트워크보안",
+          "legacy_course_code": "21500280",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501679"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501679:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:21501682",
+      "curriculum_id": "ssu:ai-software:curriculum:정보보호프로젝트1",
+      "course_code": "21501682",
+      "name": "정보보호프로젝트1",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "information-security"
+      ],
+      "official_areas": [
+        "정보보호"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [
+        {
+          "name": "융합보안프로젝트1",
+          "legacy_course_code": "21500541",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501682"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501682:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:ai-software:curriculum:빅데이터컴퓨팅",
+      "curriculum_id": "ssu:ai-software:curriculum:빅데이터컴퓨팅",
+      "course_code": null,
+      "name": "빅데이터컴퓨팅",
+      "id_status": "curriculum_only",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [
+        {
+          "name": "빅데이터컴퓨팅",
+          "legacy_course_code": "21500548",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026"
+      ],
+      "syllabus_status": "not_available_in_2026_department_offerings"
+    },
+    {
+      "course_id": "ssu:21501674",
+      "curriculum_id": "ssu:ai-software:curriculum:소프트웨어특강1",
+      "course_code": "21501674",
+      "name": "소프트웨어특강1",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [
+        {
+          "name": "소프트웨어특강1",
+          "legacy_course_code": "21500289",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501674"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501674:2026-spring:01"
+    },
+    {
+      "course_id": "ssu:21501675",
+      "curriculum_id": "ssu:ai-software:curriculum:캡스톤디자인",
+      "course_code": "21501675",
+      "name": "캡스톤디자인",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        },
+        {
+          "year": 4,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [
+        {
+          "name": "캡스톤종합프로젝트1",
+          "legacy_course_code": "21500283",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        },
+        {
+          "name": "캡스톤종합프로젝트2",
+          "legacy_course_code": "21500292",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        },
+        {
+          "name": "캡스톤디자인",
+          "legacy_course_code": "21500138",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501675"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501675:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501676",
+      "curriculum_id": "ssu:ai-software:curriculum:고급캡스톤디자인",
+      "course_code": "21501676",
+      "name": "고급캡스톤디자인",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 1,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        },
+        {
+          "year": 4,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [
+        {
+          "name": "캡스톤종합프로젝트3",
+          "legacy_course_code": "21500533",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        },
+        {
+          "name": "고급캡스톤디자인",
+          "legacy_course_code": "21500307",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501676"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501676:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501695",
+      "curriculum_id": "ssu:ai-software:curriculum:멀티모달딥러닝",
+      "course_code": "21501695",
+      "name": "멀티모달딥러닝",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "artificial-intelligence"
+      ],
+      "official_areas": [
+        "인공지능"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [
+        {
+          "name": "멀티모달딥러닝",
+          "legacy_course_code": "21501561",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501695"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501695:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501693",
+      "curriculum_id": "ssu:ai-software:curriculum:정보보호프로젝트II",
+      "course_code": "21501693",
+      "name": "정보보호프로젝트Ⅱ",
+      "id_status": "verified_current_code",
+      "tracks": [
+        "information-security"
+      ],
+      "official_areas": [
+        "정보보호"
+      ],
+      "group": "track",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [
+        {
+          "name": "융합보안프로젝트2",
+          "legacy_course_code": "21500662",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501693"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501693:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501691",
+      "curriculum_id": "ssu:ai-software:curriculum:클라우드컴퓨팅",
+      "course_code": "21501691",
+      "name": "클라우드컴퓨팅",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [
+        {
+          "name": "클라우드컴퓨팅",
+          "legacy_course_code": "21500762",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501691"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501691:2026-fall:01"
+    },
+    {
+      "course_id": "ssu:21501690",
+      "curriculum_id": "ssu:ai-software:curriculum:소프트웨어특강II",
+      "course_code": "21501690",
+      "name": "소프트웨어특강Ⅱ",
+      "id_status": "verified_current_code",
+      "tracks": [],
+      "official_areas": [
+        "공통"
+      ],
+      "group": "common",
+      "placements": [
+        {
+          "year": 4,
+          "semester": 2,
+          "classification": "전공선택",
+          "depth": "심화",
+          "credits": 3,
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "aliases": [
+        {
+          "name": "소프트웨어특강2",
+          "legacy_course_code": "21500297",
+          "source_id": "curriculum-pdf-2026",
+          "source_page": 4
+        }
+      ],
+      "source_ids": [
+        "curriculum-pdf-2026",
+        "corpus-course-index-2026",
+        "syllabus-21501690"
+      ],
+      "syllabus_status": "available",
+      "syllabus_id": "ssu:21501690:2026-fall:01"
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "ssu:21501614->ssu:21501616",
+      "from_course_id": "ssu:21501614",
+      "to_course_id": "ssu:21501616",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation",
+      "confidence": "high",
+      "reason": "기초 C 문법을 익힌 뒤 포인터·구조체·파일 처리와 개발 도구로 확장하면 학습을 이어가기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501616",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 프로그래밍기초1을 명시한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501616->ssu:21501632",
+      "from_course_id": "ssu:21501616",
+      "to_course_id": "ssu:21501632",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "포인터와 구조체를 다루는 경험이 연결 리스트·트리 등 자료구조를 직접 구현하는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501616",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "포인터·구조체·파일 처리와 고급 프로그래밍 도구를 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501632",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "리스트·스택·큐·트리·그래프의 설계와 구현을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501616->ssu:21501641",
+      "from_course_id": "ssu:21501616",
+      "to_course_id": "ssu:21501641",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "기초 프로그래밍 경험을 바탕으로 클래스·상속·다형성과 객체지향 설계를 학습하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501641",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "Java나 C++를 이용해 객체·클래스·상속·다형성을 학습한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501616->ssu:21501638",
+      "from_course_id": "ssu:21501616",
+      "to_course_id": "ssu:21501638",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation",
+      "confidence": "high",
+      "reason": "프로그램 작성 경험이 프로세서·메모리와 소프트웨어 실행의 관계를 이해하는 출발점이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501638",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 프로그래밍기초1과 프로그래밍기초2를 명시한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501616->ssu:21501649",
+      "from_course_id": "ssu:21501616",
+      "to_course_id": "ssu:21501649",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "조건·반복·함수와 프로그램 구성 경험을 웹 환경의 동작과 응용 프로그램 구현에 적용할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501649",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "웹 응용 프로그램을 만드는 기술과 실습을 다루는 과목이다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501623->ssu:21501633",
+      "from_course_id": "ssu:21501623",
+      "to_course_id": "ssu:21501633",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "귀납법·재귀·그래프에 대한 이해가 알고리즘의 정확성·복잡도를 분석하는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501623",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "귀납법·재귀·그래프·트리 등 소프트웨어 관련 수학을 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501633",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "복잡도·동적 계획법·그래프 문제와 NP-complete를 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501632->ssu:21501633",
+      "from_course_id": "ssu:21501632",
+      "to_course_id": "ssu:21501633",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "자료를 저장하고 탐색하는 기본 구조를 익힌 뒤 정렬·그래프·동적 계획법의 효율을 비교하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501633",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "정렬·동적 계획법·그래프 문제를 통해 효율적인 알고리즘과 구현을 학습한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501623->ssu:21501659",
+      "from_course_id": "ssu:21501623",
+      "to_course_id": "ssu:21501659",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "정수론·모듈러 연산과 논리적 사고는 암호 체계와 인증 원리를 이해하는 기초가 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501623",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "정수론과 논리·증명 등의 수학적 기초를 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501659",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "암호 기술·암호 응용·인증과 관련된 기초 지식을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501623->ssu:21501642",
+      "from_course_id": "ssu:21501623",
+      "to_course_id": "ssu:21501642",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "불 대수와 논리식을 이해하면 디지털 논리회로의 동작과 설계를 학습하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501623",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "불 대수를 포함한 소프트웨어 관련 이산수학을 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501642",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "부울 대수·조합회로·순차회로·유한 상태 머신을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501622->ssu:21501637",
+      "from_course_id": "ssu:21501622",
+      "to_course_id": "ssu:21501637",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "미적분과 다변수 함수의 이해는 모델의 손실 함수와 학습·최적화 원리를 공부하는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501622",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "미적분·다변수 함수·최적화 이론과 AI 알고리즘의 수학적 원리를 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501628->ssu:21501637",
+      "from_course_id": "ssu:21501628",
+      "to_course_id": "ssu:21501637",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "인공지능의 주요 문제와 방법을 개괄한 뒤 실제 모델의 학습·추론·평가로 깊이를 더하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501628",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "탐색·지식 표현·머신러닝·딥러닝과 AI 응용을 개괄한다."
+        },
+        {
+          "source_id": "syllabus-21501637",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "다양한 학습 모델을 구현하고 추론·평가하는 프로젝트를 수행한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501631->ssu:21501637",
+      "from_course_id": "ssu:21501631",
+      "to_course_id": "ssu:21501637",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "확률분포와 추정·검정을 익히면 데이터와 모델의 불확실성 및 평가 결과를 해석하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501631",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "확률분포·표본분포·추정·검정을 학습한다."
+        },
+        {
+          "source_id": "syllabus-21501637",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "실데이터를 사용한 모델 학습·추론·평가를 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501640->ssu:21501661",
+      "from_course_id": "ssu:21501640",
+      "to_course_id": "ssu:21501661",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation_mapped",
+      "confidence": "high",
+      "reason": "벡터·행렬·선형변환과 최적화에 대한 이해가 신경망 연산을 구현하고 설명하는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501640",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "행렬·벡터·선형변환과 딥러닝에 필요한 선형대수 기법을 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501661",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 선형대수와 확률및통계를 제시한다."
+        }
+      ],
+      "note": "강의계획서의 일반 주제명 선형대수를 고급AI수학의 실제 강의 내용에 대응시킨 추천이다."
+    },
+    {
+      "edge_id": "ssu:21501637->ssu:21501661",
+      "from_course_id": "ssu:21501637",
+      "to_course_id": "ssu:21501661",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "모델 학습·추론·평가의 기본 흐름을 익힌 뒤 신경망을 코드로 구현하고 실험하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501637",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "다층퍼셉트론과 딥러닝 기초를 포함한 학습 모델을 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501661",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "딥러닝 모델의 원리와 프로그래밍 실습을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501641->ssu:21501653",
+      "from_course_id": "ssu:21501641",
+      "to_course_id": "ssu:21501653",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "객체지향 언어의 사용 경험을 바탕으로 언어의 자료형·함수·문장과 설계 원리를 비교하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501653",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "언어의 구성요소와 설계 원리·구현 방법을 학습한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501653->ssu:21501665",
+      "from_course_id": "ssu:21501653",
+      "to_course_id": "ssu:21501665",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation",
+      "confidence": "high",
+      "reason": "언어의 문법과 의미를 이해한 뒤 구문·의미 분석과 코드 생성으로 연결할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501665",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 프로그래밍언어와 시스템프로그래밍을 명시한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501658->ssu:21501665",
+      "from_course_id": "ssu:21501658",
+      "to_course_id": "ssu:21501665",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation",
+      "confidence": "high",
+      "reason": "저수준 실행 환경과 메모리·프로세스 경험은 실행 코드를 생성하는 컴파일러 구현에 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501665",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 시스템프로그래밍을 명시한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501641->ssu:21501663",
+      "from_course_id": "ssu:21501641",
+      "to_course_id": "ssu:21501663",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "객체·클래스와 객체지향 설계 경험을 모바일 앱의 데이터 모델과 MVC 구조에 활용할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501641",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "Java나 C++를 사용한 객체지향 프로그래밍을 학습한다."
+        },
+        {
+          "source_id": "syllabus-21501663",
+          "page_number": 1,
+          "section": "교육목표",
+          "context": "객체 위주의 데이터 모델 설계와 MVC 기반 앱 개발을 학습한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501649->ssu:ai-software:curriculum:서버프로그래밍",
+      "from_course_id": "ssu:21501649",
+      "to_course_id": "ssu:ai-software:curriculum:서버프로그래밍",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "curriculum_topic_inference",
+      "confidence": "low",
+      "reason": "웹 요청·응답과 클라이언트 응용에 대한 이해를 서버 측 기능 구현으로 확장하는 학습 흐름을 제안한다.",
+      "evidence": [
+        {
+          "source_id": "curriculum-pdf-2026",
+          "page_number": 3,
+          "section": "3학년 1학기 교과과정표",
+          "context": "3학년 1학기 프로그래밍 영역에 서버프로그래밍이 배치되어 있다."
+        }
+      ],
+      "note": "2026 강의계획서가 확보되지 않아 과목명과 교육과정 배치를 바탕으로 제안한 연결이다."
+    },
+    {
+      "edge_id": "ssu:21501656->ssu:ai-software:curriculum:서버프로그래밍",
+      "from_course_id": "ssu:21501656",
+      "to_course_id": "ssu:ai-software:curriculum:서버프로그래밍",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "curriculum_topic_inference",
+      "confidence": "low",
+      "reason": "SQL과 관계형 데이터 설계는 데이터를 저장·조회하는 서버 기능을 구현하는 데 유용한 준비가 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501656",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "관계형 모델·SQL·정규화와 DBMS 실습을 다룬다."
+        },
+        {
+          "source_id": "curriculum-pdf-2026",
+          "page_number": 3,
+          "section": "3학년 1학기 교과과정표",
+          "context": "교과과정에 서버프로그래밍이 포함된다."
+        }
+      ],
+      "note": "서버프로그래밍의 상세 주차·수업 내용은 아직 확인하지 못했다."
+    },
+    {
+      "edge_id": "ssu:21501656->ssu:21501667",
+      "from_course_id": "ssu:21501656",
+      "to_course_id": "ssu:21501667",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "high",
+      "reason": "관계형 모델·SQL·정규화의 기본기를 바탕으로 트랜잭션·색인·질의 처리의 내부 기술을 학습하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501667",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "데이터베이스 과목에서 배운 지식을 바탕으로 트랜잭션·색인·질의 처리 등을 학습한다고 설명한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501643->ssu:21501657",
+      "from_course_id": "ssu:21501643",
+      "to_course_id": "ssu:21501657",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "TCP/IP 계층과 전송 원리를 익힌 뒤 소켓 프로그래밍과 응용계층 프로토콜 설계에 적용할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501643",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "TCP/IP의 응용·전송·네트워크·링크 계층과 동작 원리를 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501657",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "TCP 소켓과 클라이언트–서버 프로토콜 설계·구현을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501638->ssu:21501654",
+      "from_course_id": "ssu:21501638",
+      "to_course_id": "ssu:21501654",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "프로세서와 메모리의 동작을 이해하면 CPU 스케줄링·메모리 관리·입출력 추상화를 학습하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501638",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "프로세서·메모리 구조와 하드웨어–소프트웨어 상호작용을 학습한다."
+        },
+        {
+          "source_id": "syllabus-21501654",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "CPU 스케줄링·메모리 관리·입출력 시스템을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501654->ssu:21501658",
+      "from_course_id": "ssu:21501654",
+      "to_course_id": "ssu:21501658",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "프로세스·스레드·메모리·동기화 개념을 POSIX 기반 시스템 프로그램의 구현으로 연결할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501658",
+          "page_number": 1,
+          "section": "교육목표",
+          "context": "운영체제의 메모리·스레드·프로세스·동시성 기능을 활용한 설계와 구현을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501654->ssu:ai-software:curriculum:분산컴퓨팅",
+      "from_course_id": "ssu:21501654",
+      "to_course_id": "ssu:ai-software:curriculum:분산컴퓨팅",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "curriculum_topic_inference",
+      "confidence": "low",
+      "reason": "프로세스와 동시성에 대한 이해를 여러 컴퓨터에서 작업을 조정하는 문제로 확장하는 흐름을 제안한다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501654",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "프로세스·스레드·동기화·교착상태를 다룬다."
+        },
+        {
+          "source_id": "curriculum-pdf-2026",
+          "page_number": 4,
+          "section": "4학년 1학기 교과과정표",
+          "context": "4학년 1학기 소프트웨어 심화 과목으로 배치되어 있다."
+        }
+      ],
+      "note": "분산컴퓨팅의 2026 강의계획서는 확보되지 않았다."
+    },
+    {
+      "edge_id": "ssu:21501657->ssu:ai-software:curriculum:분산컴퓨팅",
+      "from_course_id": "ssu:21501657",
+      "to_course_id": "ssu:ai-software:curriculum:분산컴퓨팅",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "curriculum_topic_inference",
+      "confidence": "low",
+      "reason": "네트워크 통신과 프로토콜 구현 경험은 분산된 구성요소 사이의 메시지 교환을 이해하는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501657",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "클라이언트–서버 통신과 프로토콜 설계·구현을 다룬다."
+        },
+        {
+          "source_id": "curriculum-pdf-2026",
+          "page_number": 4,
+          "section": "4학년 1학기 교과과정표",
+          "context": "교과과정의 소프트웨어 심화 영역에 분산컴퓨팅이 포함된다."
+        }
+      ],
+      "note": "분산컴퓨팅의 상세 강의 내용은 아직 확인하지 못했다."
+    },
+    {
+      "edge_id": "ssu:ai-software:curriculum:분산컴퓨팅->ssu:21501691",
+      "from_course_id": "ssu:ai-software:curriculum:분산컴퓨팅",
+      "to_course_id": "ssu:21501691",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "curriculum_topic_inference",
+      "confidence": "low",
+      "reason": "여러 컴퓨터가 협력하는 시스템의 관점을 가상화·컨테이너·클라우드 서비스 운영으로 확장할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "curriculum-pdf-2026",
+          "page_number": 4,
+          "section": "4학년 1학기 교과과정표",
+          "context": "4학년 1학기에 분산컴퓨팅이 배치되어 있다."
+        },
+        {
+          "source_id": "syllabus-21501691",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "가상화·컨테이너·쿠버네티스와 클라우드 서비스 모델을 다룬다."
+        }
+      ],
+      "note": "분산컴퓨팅 쪽 세부 내용은 과목명과 교과과정 배치에 근거한다."
+    },
+    {
+      "edge_id": "ssu:21501631->ssu:21501660",
+      "from_course_id": "ssu:21501631",
+      "to_course_id": "ssu:21501660",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "추정·검정과 확률분포를 익히면 데이터 분석 결과와 예측 모델을 해석하는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501660",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "다양한 형태의 데이터를 처리하기 위한 통계와 기계학습 및 예측 프로젝트를 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501660->ssu:21501650",
+      "from_course_id": "ssu:21501660",
+      "to_course_id": "ssu:21501650",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "데이터 전처리·분석·예측 경험을 SNS 데이터 수집과 텍스트·소셜 네트워크 분석으로 확장할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501650",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "SNS 빅데이터 수집·분석, 소셜 네트워크 분석, 텍스트 마이닝을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501650->ssu:ai-software:curriculum:빅데이터컴퓨팅",
+      "from_course_id": "ssu:21501650",
+      "to_course_id": "ssu:ai-software:curriculum:빅데이터컴퓨팅",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "curriculum_topic_inference",
+      "confidence": "low",
+      "reason": "데이터 수집·분석 문제를 경험한 뒤 대규모 데이터 처리의 계산 환경과 실행 문제를 학습하는 흐름을 제안한다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501650",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "대규모 SNS 데이터의 수집·분석과 실전 분석 경험을 다룬다."
+        },
+        {
+          "source_id": "curriculum-pdf-2026",
+          "page_number": 4,
+          "section": "4학년 1학기 교과과정표",
+          "context": "4학년 1학기 공통 영역에 빅데이터컴퓨팅이 배치되어 있다."
+        }
+      ],
+      "note": "빅데이터컴퓨팅의 2026 강의계획서가 없어 세부 기술은 단정하지 않는다."
+    },
+    {
+      "edge_id": "ssu:ai-software:curriculum:분산컴퓨팅->ssu:ai-software:curriculum:빅데이터컴퓨팅",
+      "from_course_id": "ssu:ai-software:curriculum:분산컴퓨팅",
+      "to_course_id": "ssu:ai-software:curriculum:빅데이터컴퓨팅",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "curriculum_topic_inference",
+      "confidence": "low",
+      "reason": "분산 실행의 관점을 대규모 데이터 처리 문제에 적용하는 학습 연결을 제안한다.",
+      "evidence": [
+        {
+          "source_id": "curriculum-pdf-2026",
+          "page_number": 4,
+          "section": "4학년 1학기 교과과정표",
+          "context": "4학년 1학기 소프트웨어 심화 영역에 포함된다."
+        },
+        {
+          "source_id": "curriculum-pdf-2026",
+          "page_number": 4,
+          "section": "4학년 1학기 교과과정표",
+          "context": "같은 학기 공통 영역에 빅데이터컴퓨팅이 포함된다."
+        }
+      ],
+      "note": "두 과목의 강의계획서가 없어 제목의 주제 관계에 근거한 약한 추천이며 같은 학기 병행 학습도 가능하다."
+    },
+    {
+      "edge_id": "ssu:21501661->ssu:21501670",
+      "from_course_id": "ssu:21501661",
+      "to_course_id": "ssu:21501670",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation_mapped",
+      "confidence": "high",
+      "reason": "신경망 학습·추론을 직접 구현한 경험이 언어 모델·시퀀스 모델·Transformer 학습에 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501670",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 학부 수준 머신러닝·딥러닝·확률통계·선형대수를 제시한다."
+        }
+      ],
+      "note": "권장 항목의 딥러닝을 딥러닝프로그래밍 과목의 내용과 대응시킨 연결이다."
+    },
+    {
+      "edge_id": "ssu:21501661->ssu:21501684",
+      "from_course_id": "ssu:21501661",
+      "to_course_id": "ssu:21501684",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation",
+      "confidence": "high",
+      "reason": "딥러닝 모델을 구현한 경험을 CNN·Transformer 기반의 시각 데이터 분석으로 확장할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501684",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 딥러닝프로그래밍을 명시한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501670->ssu:21501695",
+      "from_course_id": "ssu:21501670",
+      "to_course_id": "ssu:21501695",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation",
+      "confidence": "high",
+      "reason": "언어 모델과 Transformer를 이해하면 이미지–텍스트 결합 모델의 언어 표현과 학습 방법을 이해하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501695",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 자연언어처리를 제시하며 주차 계획에 NLP 모델 복습을 포함한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501684->ssu:21501695",
+      "from_course_id": "ssu:21501684",
+      "to_course_id": "ssu:21501695",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation",
+      "confidence": "high",
+      "reason": "시각 표현과 영상 모델의 기본기를 바탕으로 시각–언어 정렬과 VLM을 공부하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501695",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 컴퓨터비전을 제시하며 주차 계획에 비전 모델 복습을 포함한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501640->ssu:21501644",
+      "from_course_id": "ssu:21501640",
+      "to_course_id": "ssu:21501644",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation",
+      "confidence": "high",
+      "reason": "벡터·행렬·선형변환의 이해를 센서·좌표·경로와 관련된 자율주행 문제에 활용할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501644",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 선형대수(고급AI수학)를 명시한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501631->ssu:21501644",
+      "from_course_id": "ssu:21501631",
+      "to_course_id": "ssu:21501644",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation",
+      "confidence": "high",
+      "reason": "확률과 통계의 기본기는 불확실한 센서 데이터를 해석하고 자율주행 알고리즘을 이해하는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501644",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 확률및통계를 명시한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501641->ssu:21501644",
+      "from_course_id": "ssu:21501641",
+      "to_course_id": "ssu:21501644",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation_mapped",
+      "confidence": "medium",
+      "reason": "객체지향 언어와 C++ 구현 경험을 ROS 기반 자율주행 소프트웨어 실습에 활용할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501641",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "Java나 C++를 이용해 객체지향 프로그래밍을 학습한다."
+        },
+        {
+          "source_id": "syllabus-21501644",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 C++프로그래밍을 제시한다."
+        }
+      ],
+      "note": "고급프로그래밍의 사용 언어는 분반별로 다를 수 있으므로 C++ 경험이 있는 경우에 특히 적합하다."
+    },
+    {
+      "edge_id": "ssu:21501644->ssu:21501662",
+      "from_course_id": "ssu:21501644",
+      "to_course_id": "ssu:21501662",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "ROS·센서 처리·SLAM·경로 계획 경험을 로봇의 운동학·제어와 통합 시스템 구현에 이어갈 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501644",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "ROS 시뮬레이션, 센서 처리, 경로 계획, SLAM을 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501662",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "ROS 기반 로봇 제어와 운동학, SLAM·Navigation 실습을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501661->ssu:21501671",
+      "from_course_id": "ssu:21501661",
+      "to_course_id": "ssu:21501671",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation",
+      "confidence": "high",
+      "reason": "학습·추론 모델 구현 경험을 임베디드 환경의 모델 경량화와 최적화로 확장하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501671",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 딥러닝 프로그래밍을 명시한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501658->ssu:21501671",
+      "from_course_id": "ssu:21501658",
+      "to_course_id": "ssu:21501671",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "메모리·프로세스·동시성에 대한 구현 경험은 제한된 장치에서 실행 환경과 자원을 다루는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501658",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "메모리 관리·스레드·프로세스·동기화의 시스템 프로그래밍을 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501671",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "임베디드 하드웨어 제어, 실시간 운영체제, 센서 입출력과 모델 최적화를 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501671->ssu:21501686",
+      "from_course_id": "ssu:21501671",
+      "to_course_id": "ssu:21501686",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "자원 제약과 모델 최적화를 경험한 뒤 하드웨어 가속과 병렬 연산으로 성능을 높이는 방법을 학습하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501686",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "GPU·TPU·NPU 구조와 병렬 연산 및 AI 모델 가속화를 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501642->ssu:21501686",
+      "from_course_id": "ssu:21501642",
+      "to_course_id": "ssu:21501686",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "디지털 회로와 데이터패스의 이해는 AI 가속기의 구조·동작을 해석하는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501642",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "디지털 논리회로·데이터패스·RTL 설계의 기초를 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501686",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "AI 하드웨어 가속기의 구조와 동작 원리를 학습한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501637->ssu:21501672",
+      "from_course_id": "ssu:21501637",
+      "to_course_id": "ssu:21501672",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "모델 학습·추론·평가 경험을 IoT 데이터 수집부터 클라우드 모델 학습·배포까지 연결할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501672",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "IoT 장치부터 클라우드 서버까지 데이터 수집·교환·AI 모델 학습·배포를 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501657->ssu:21501672",
+      "from_course_id": "ssu:21501657",
+      "to_course_id": "ssu:21501672",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "클라이언트–서버 통신과 프로토콜 설계 경험은 IoT 장치와 클라우드 사이의 데이터 교환을 이해하는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501672",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "IoT 장치와 클라우드를 연결하는 전주기적 데이터 교환과 시스템 구성을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501672->ssu:21501691",
+      "from_course_id": "ssu:21501672",
+      "to_course_id": "ssu:21501691",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "IoT부터 서버까지 시스템을 구성한 경험을 클라우드 인프라·서비스 모델·운영 도구로 확장할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501691",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "클라우드 인프라, 서비스 모델, DevOps·CI/CD를 학습한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501627->ssu:21501691",
+      "from_course_id": "ssu:21501627",
+      "to_course_id": "ssu:21501691",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "리눅스·버전 관리·협업 도구 경험은 DevOps와 CI/CD 기반의 클라우드 운영 실습에 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501627",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "Git·GitHub, 리눅스·쉘, 협업 개발 프로세스를 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501691",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "DevOps와 CI/CD 파이프라인 및 클라우드 실습을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501657->ssu:21501679",
+      "from_course_id": "ssu:21501657",
+      "to_course_id": "ssu:21501679",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "프로토콜과 데이터 전송을 이해하면 접근통제·전송 보안·침입차단 기술의 적용 지점을 파악하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501679",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "네트워크 접근통제·전송 보안·방화벽·침입차단시스템을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501659->ssu:21501679",
+      "from_course_id": "ssu:21501659",
+      "to_course_id": "ssu:21501679",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "암호와 인증의 기본기를 바탕으로 네트워크에서의 인증·전자서명·보안 프로토콜을 학습하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501679",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "대칭키·공개키 암호를 응용한 인증과 전자서명 및 네트워크 보안을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501658->ssu:21501678",
+      "from_course_id": "ssu:21501658",
+      "to_course_id": "ssu:21501678",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "메모리와 저수준 실행 환경을 다룬 경험은 버퍼 오버플로우와 시스템 보호 기법을 이해하는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501678",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "프로세스 메모리·스택·함수 호출과 시스템 해킹 및 보호 기법을 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501665->ssu:21501678",
+      "from_course_id": "ssu:21501665",
+      "to_course_id": "ssu:21501678",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "코드 생성과 실행 코드의 구조를 이해하면 리버싱·함수 호출·쉘코드 분석을 학습하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501678",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "컴파일러·운영체제·프로그래머 관점의 보안 기술과 리버싱·쉘코드를 다룬다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501654->ssu:21501669",
+      "from_course_id": "ssu:21501654",
+      "to_course_id": "ssu:21501669",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "파일 시스템·저장장치·프로세스의 기본 개념은 디스크와 시스템 아티팩트를 분석하는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501669",
+          "page_number": 1,
+          "section": "교육목표",
+          "context": "저장매체의 디스크 이미지와 파일 시스템 분석·복구 및 윈도우 아티팩트 분석을 목표로 한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501657->ssu:21501669",
+      "from_course_id": "ssu:21501657",
+      "to_course_id": "ssu:21501669",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "프로토콜과 트래픽을 이해하면 패킷을 수집하고 비정상 통신을 해석하는 포렌식 실습에 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501669",
+          "page_number": 1,
+          "section": "교육목표",
+          "context": "네트워크 패킷 수집·비정상 트래픽 식별과 침해사고 분석을 목표로 한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501637->ssu:21501668",
+      "from_course_id": "ssu:21501637",
+      "to_course_id": "ssu:21501668",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation_mapped",
+      "confidence": "medium",
+      "reason": "학습 모델의 동작과 평가 경험을 AI 기반 위협 탐지와 AI 자체의 보안 문제 분석에 활용할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501668",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 인공지능 관련 과목과 파이썬 프로그래밍 관련 과목을 제시한다."
+        },
+        {
+          "source_id": "syllabus-21501668",
+          "page_number": 1,
+          "section": "교육목표",
+          "context": "머신러닝을 활용한 보안 문제 분석과 생성형 AI 위협을 학습한다."
+        }
+      ],
+      "note": "일반적인 인공지능 관련 과목을 머신러닝 과목의 내용에 대응시켰다."
+    },
+    {
+      "edge_id": "ssu:21501678->ssu:21501682",
+      "from_course_id": "ssu:21501678",
+      "to_course_id": "ssu:21501682",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "project_topic_option",
+      "confidence": "medium",
+      "reason": "시스템보안에서 배운 주제를 선택해 보안 문제의 설계·구현·평가 프로젝트로 확장할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501678",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "메모리·실행 코드 분석과 시스템 보안 실습을 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501682",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "관심 있는 보안 융합 연구 주제를 정해 설계·구현·평가하는 프로젝트를 수행한다."
+        }
+      ],
+      "note": "프로젝트 주제에 맞는 선택적 준비 경로이며 네 과목을 모두 이수해야 한다는 의미가 아니다."
+    },
+    {
+      "edge_id": "ssu:21501679->ssu:21501682",
+      "from_course_id": "ssu:21501679",
+      "to_course_id": "ssu:21501682",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "project_topic_option",
+      "confidence": "medium",
+      "reason": "네트워크보안에서 배운 주제를 선택해 보안 문제의 설계·구현·평가 프로젝트로 확장할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501679",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "암호 응용·접근통제·전송 보안과 도구 실습을 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501682",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "관심 있는 보안 융합 연구 주제를 정해 설계·구현·평가하는 프로젝트를 수행한다."
+        }
+      ],
+      "note": "프로젝트 주제에 맞는 선택적 준비 경로이며 네 과목을 모두 이수해야 한다는 의미가 아니다."
+    },
+    {
+      "edge_id": "ssu:21501668->ssu:21501682",
+      "from_course_id": "ssu:21501668",
+      "to_course_id": "ssu:21501682",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "project_topic_option",
+      "confidence": "medium",
+      "reason": "AI보안에서 배운 주제를 선택해 보안 문제의 설계·구현·평가 프로젝트로 확장할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501668",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "AI 활용 보안·AI 자체 보안·프라이버시와 텀프로젝트를 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501682",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "관심 있는 보안 융합 연구 주제를 정해 설계·구현·평가하는 프로젝트를 수행한다."
+        }
+      ],
+      "note": "프로젝트 주제에 맞는 선택적 준비 경로이며 네 과목을 모두 이수해야 한다는 의미가 아니다."
+    },
+    {
+      "edge_id": "ssu:21501669->ssu:21501682",
+      "from_course_id": "ssu:21501669",
+      "to_course_id": "ssu:21501682",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "project_topic_option",
+      "confidence": "medium",
+      "reason": "디지털포렌식개론에서 배운 주제를 선택해 보안 문제의 설계·구현·평가 프로젝트로 확장할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501669",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "디지털 증거 분석과 침해사고 분석 역량을 다룬다."
+        },
+        {
+          "source_id": "syllabus-21501682",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "관심 있는 보안 융합 연구 주제를 정해 설계·구현·평가하는 프로젝트를 수행한다."
+        }
+      ],
+      "note": "프로젝트 주제에 맞는 선택적 준비 경로이며 네 과목을 모두 이수해야 한다는 의미가 아니다."
+    },
+    {
+      "edge_id": "ssu:21501682->ssu:21501693",
+      "from_course_id": "ssu:21501682",
+      "to_course_id": "ssu:21501693",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_recommendation_mapped",
+      "confidence": "high",
+      "reason": "앞선 보안 프로젝트의 문제 정의·구현·평가 경험을 다음 보안 프로젝트의 개선과 심화에 활용할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501693",
+          "page_number": 1,
+          "section": "선수권장과목",
+          "context": "선수권장과목에 융합보안프로젝트1을 명시한다."
+        },
+        {
+          "source_id": "curriculum-pdf-2026",
+          "page_number": 4,
+          "section": "과목 변경/대응 표",
+          "context": "정보보호프로젝트1의 기존 과목명은 융합보안프로젝트1(기존 코드 21500541)이다."
+        }
+      ],
+      "note": "현재 과목 ID를 사용하고 기존 명칭은 공식 대응 표로만 연결했다."
+    },
+    {
+      "edge_id": "ssu:21501624->ssu:21501666",
+      "from_course_id": "ssu:21501624",
+      "to_course_id": "ssu:21501666",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "문제 정의·요구사항·팀 의사소통 경험을 구체적인 소프트웨어 분석과 UML 설계로 확장할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501624",
+          "page_number": 1,
+          "section": "교육목표",
+          "context": "문제 정의·모델링, 사용자 요구사항, 팀워크와 의사소통을 목표로 한다."
+        },
+        {
+          "source_id": "syllabus-21501666",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "요구사항 분석과 UML 기반 소프트웨어 설계를 학습한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501641->ssu:21501666",
+      "from_course_id": "ssu:21501641",
+      "to_course_id": "ssu:21501666",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "객체지향 구현 경험이 객체의 책임과 상호작용을 분석하고 설계 모델로 표현하는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501666",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "분석·설계 기법과 UML을 학습하고 실습한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501666->ssu:21501675",
+      "from_course_id": "ssu:21501666",
+      "to_course_id": "ssu:21501675",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "요구사항 분석과 설계 모델링을 팀 프로젝트의 목표·명세·구현·평가 전 과정에 활용할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501675",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "전공 기술을 종합해 목표·관련 기술·설계·명세·구현·평가를 수행하는 장기 프로젝트이다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501627->ssu:21501675",
+      "from_course_id": "ssu:21501627",
+      "to_course_id": "ssu:21501675",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "버전 관리·코드 리뷰·문서화와 협업 경험은 장기 팀 프로젝트를 운영하는 데 도움이 된다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501627",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "Git·GitHub 협업, 코드 리뷰와 문서화 경험을 쌓는다."
+        },
+        {
+          "source_id": "syllabus-21501675",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "팀을 구성해 장기 프로젝트와 보고서·발표를 수행한다."
+        }
+      ]
+    },
+    {
+      "edge_id": "ssu:21501675->ssu:21501676",
+      "from_course_id": "ssu:21501675",
+      "to_course_id": "ssu:21501676",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "project_extension_inference",
+      "confidence": "low",
+      "reason": "팀 프로젝트의 설계·구현·평가 경험을 더 복잡한 목표의 프로젝트나 결과 개선으로 발전시키는 경로를 제안한다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501675",
+          "page_number": 1,
+          "section": "교과목 개요",
+          "context": "전공 요소 기술을 종합하는 장기 팀 프로젝트를 수행한다."
+        },
+        {
+          "source_id": "syllabus-21501676",
+          "page_number": 1,
+          "section": "교육목표",
+          "context": "계획 수립·추진·팀워크·제안서·보고서·발표 역량을 목표로 한다."
+        }
+      ],
+      "note": "두 과목은 같은 학년·학기에 배치되어 있으며 이 연결은 공식 순서나 연속 수강 요건을 뜻하지 않는다."
+    },
+    {
+      "edge_id": "ssu:21501637->ssu:21501674",
+      "from_course_id": "ssu:21501637",
+      "to_course_id": "ssu:21501674",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "모델의 학습·추론 경험을 산업 현장의 AI 인프라·에이전트 활용 사례와 연결해 이해하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501674",
+          "page_number": 1,
+          "section": "교육목표",
+          "context": "산업 도메인에서 AI 인프라와 에이전트로 활용되는 소프트웨어의 특성을 다룬다."
+        }
+      ],
+      "note": "2026 대표 강의계획서의 주제에 한정된 추천으로 특강 주제는 바뀔 수 있다."
+    },
+    {
+      "edge_id": "ssu:21501627->ssu:21501690",
+      "from_course_id": "ssu:21501627",
+      "to_course_id": "ssu:21501690",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "오픈소스 생태계와 협업 경험을 생성형 AI 시대의 개발자 역량과 산업 사례를 해석하는 데 활용할 수 있다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501690",
+          "page_number": 1,
+          "section": "교육목표",
+          "context": "오픈소스 생태계·기업 개발 사례와 생성형 AI 시대 개발자 역량을 다룬다."
+        }
+      ],
+      "note": "특강1을 선행 과목으로 가정하지 않으며 특강 주제는 학기별로 달라질 수 있다."
+    },
+    {
+      "edge_id": "ssu:21501666->ssu:21501690",
+      "from_course_id": "ssu:21501666",
+      "to_course_id": "ssu:21501690",
+      "relation": "prepares_for",
+      "source": "recommended",
+      "status": "provisional",
+      "official_prerequisite": false,
+      "requirement": "optional_preparation",
+      "basis": "syllabus_content_inference",
+      "confidence": "medium",
+      "reason": "소프트웨어 분석·설계 관점을 바탕으로 산업 현장의 아키텍처와 개발자의 판단 역할을 논의하기 좋다.",
+      "evidence": [
+        {
+          "source_id": "syllabus-21501690",
+          "page_number": 1,
+          "section": "교육목표",
+          "context": "소프트웨어 공학·아키텍처·산업 사례를 중심으로 개발자 역량을 학습한다."
+        }
+      ],
+      "note": "2026 대표 강의계획서의 주제에 한정된 추천이다."
+    }
+  ]
+}

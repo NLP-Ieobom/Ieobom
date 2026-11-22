@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 from uuid import UUID
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 
 def nonblank(value: str) -> str:
@@ -13,6 +13,7 @@ def nonblank(value: str) -> str:
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True), AfterValidator(nonblank)]
 QuestionType = Literal["connect_prior", "understand_flow", "challenge", "apply", "extend"]
+ChatQuestion = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
 
 
 class StructuredOutput(BaseModel):
@@ -33,8 +34,15 @@ class PageAnalysis(StructuredOutput):
 
 
 class FollowUpAnswer(StructuredOutput):
+    answer_status: Literal["answered", "conversation", "insufficient_evidence"] = "answered"
     explanation: Text
-    evidence_block_ids: list[Text] = Field(min_length=1)
+    evidence_block_ids: list[Text]
+
+    @model_validator(mode="after")
+    def check_evidence(self) -> Self:
+        if (self.answer_status == "answered") != bool(self.evidence_block_ids):
+            raise ValueError("Only grounded answers must include evidence")
+        return self
 
 
 class Explanation(StructuredOutput):
@@ -156,5 +164,11 @@ class StoredPageLearning(PageLearning):
     questions: list[StoredQuestionLearning] = Field(max_length=2)
 
 
+class ChatExchange(StructuredOutput):
+    question: ChatQuestion
+    answer: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=3000)]
+
+
 class AskRequest(BaseModel):
-    question: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
+    question: ChatQuestion
+    history: list[ChatExchange] = Field(default_factory=list, max_length=3)

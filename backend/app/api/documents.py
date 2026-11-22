@@ -493,6 +493,6 @@ def ask_about_page(
     if not os.environ.get("GEMINI_API_KEY", "").strip():
         raise HTTPException(status_code=503, detail="follow-up questions are unavailable")
     try:
-        return answer_follow_up(Gemini(), page, payload.question)
+        return answer_follow_up(Gemini(), page, payload.question, payload.history)
     except ProviderError:
         raise HTTPException(status_code=502, detail="could not generate a grounded answer") from None

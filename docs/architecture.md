@@ -24,7 +24,8 @@ API와 워커가 직접 통신하거나 Redis를 사용하는 구조는 아니�
 
 프론트는 원본 PDF를 받아 페이지 단위로 표시한다. 페이지 이미지를 S3에 따로 저장하지 않는다.
 질문·메모·열람 위치는 JSON API로 다룬다. 조회 API는 저장된 결과를 읽으며 Gemini를 호출하지 않는다.
-`/ask`는 직접 Gemini를 호출하는 경로가 있으나 챗봇 기능은 아직 완성 범위에 포함하지 않는다.
+`/ask`는 저장된 현재 페이지와 요청에 포함된 최근 대화로 Gemini를 직접 호출한다.
+답변의 근거 ID는 같은 페이지의 블록과 대조하고 대화 기록은 클라이언트가 관리한다.
 
 ## PDF 처리
 
@@ -102,16 +103,17 @@ Gemini가 요약하고 과목별로 30일간 재사용한다. 검색이 실패�
 
 ## 데이터 준비와 남은 범위
 
-경영학부 커리큘럼은 임시 시연 데이터다. 숭실대 실제 과목·관계는 팀원이 정리한 자료를 받은 뒤
-등록한다. 계정의 커리큘럼 선택 저장, 학기별 수강 이력, 분반 선택, 완성된 챗봇은 아직 제공하지 않는다.
+숭실대학교 AI소프트웨어학부 2026학년도 교육과정은 [과목 연결 그래프](course-graph/README.md)를 사용한다.
+계정의 커리큘럼 선택 저장, 학기별 수강 이력과 분반 선택은 아직 제공하지 않는다.
 
 DB 연결과 환경 변수를 준비한 뒤 `backend/`에서 실행한다. 마이그레이션만으로 과목 데이터가 들어가지는 않는다.
 
 ```sh
 alembic upgrade head
-python -m app.scripts.seed_curricula
+python -m app.scripts.seed_ssu_curriculum
 ```
 
 과목 추천용 자료는 대상 커리큘럼을 등록한 뒤 `python -m app.services.curriculum_search <corpus.zip> --curriculum-id <UUID>`로 넣는다.
+경영학부 시연 커리큘럼은 `python -m app.scripts.seed_curricula`로 등록한다.
 파일로만 질문 생성을 확인할 때는 `python -m app.pipelines.learning_cli <extraction.json> -o <learning.json> --env-file ../.env`를 사용한다.
 CLI 결과 예시는 [learning.example.json](examples/learning.example.json)이며 HTTP 응답과 달리 질문 UUID·저장 여부가 없다.

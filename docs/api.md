@@ -123,7 +123,9 @@ type CurriculumMapResponse = {
 하나의 커리큘럼 상세와 지도는 `/map`으로 받는다. 별도 `GET /curricula/{id}`는 없다.
 지도에는 미수강 과목도 포함하므로 `enrollment_status`로 흑백·수강 중·완료 표시를 나눈다.
 관계는 `source_course_id`에서 `target_course_id`로 연결한다. 화면 배치 좌표·학년·학기 정보는 응답에 없다.
-관계가 없으면 `relations=[]`이며, 현재 데모의 `relation_type=recommended`, `source=demo`는 공식 선수 관계가 아니다.
+관계가 없으면 `relations=[]`다. `source=ssu_2026_provisional`은 숭실대 AI소프트웨어학부 2026학년도
+시연용 학습 순서를 뜻한다. 두 시연 데이터 출처(`ssu_2026_provisional`, `demo`)의
+`relation_type=recommended`는 화면에 학습 추천으로 표시한다.
 
 수강 상태는 사용자가 직접 바꾸며 완료에서 수강 중으로 되돌릴 수 있다. 등록 취소는 PDF·메모·진도를
 지우지 않고 지도에서 `not_enrolled`로 바뀐다. 수강 등록 없이도 등록된 과목에 PDF를 올릴 수 있다.
@@ -445,15 +447,30 @@ type DocumentProgressResponse = DocumentReadingProgress & {
 
 ## 추가 질문과 상태 확인
 
-`/ask`는 현재 호출 경로를 기록한 것이다. 챗봇은 미완성 기능이므로 기본 학습 패널은 저장된 해설로 구성한다.
+`/ask`는 분석이 끝난 현재 페이지에 대해 질문하고 앞 대화를 이어 갈 수 있는 API다.
 
 | API | 입력 | 성공 | 추가 오류 |
 | --- | --- | --- | --- |
-| `POST /documents/{document_id}/pages/{page_number}/ask` | 본문 `{question: string}`. 앞뒤 공백 제거 후 1~1,000자 | `200 {explanation: string, evidence_block_ids: string[]}` | `404` 결과·페이지 없음, `409` 제외 페이지, `503` 설정 없음, `502` 생성 실패 |
+| `POST /documents/{document_id}/pages/{page_number}/ask` | `{question: string, history?: {question: string, answer: string}[]}` | `200 {answer_status: "answered" \| "conversation" \| "insufficient_evidence", explanation: string, evidence_block_ids: string[]}` | `404` 결과·페이지 없음, `409` 제외 페이지, `422` 입력 형식·길이 오류, `503` 설정 없음, `502` 생성 실패 |
 | `GET /health` | 없음. 인증 불필요, `/api/v1` 밖 | `200 {status: "ok"}` | API 프로세스 응답 확인용 |
 
-`/ask`는 해당 페이지를 근거로 Gemini를 직접 호출하고 대화·질문 행을 저장하지 않는다.
-현재 페이지 범위 오류는 다른 페이지 API와 달리 `404`일 수 있다.
+`question`은 앞뒤 공백을 제거한 뒤 1~1,000자다. `history`에는 같은 페이지에서 주고받은 최근 3쌍까지 오래된 순서대로 보낸다.
+이전 질문도 1~1,000자, 답변은 1~3,000자다. 첫 질문은 `history`를 생략하거나 빈 배열을 보낸다.
+클라이언트는 페이지별로 기록을 관리하고, 이전 페이지의 응답이 늦게 도착하면 현재 화면에는 표시하지 않는다.
+
+```json
+{
+  "question": "그게 왜 필요한 거야?",
+  "history": [
+    {"question": "어텐션이 뭐야?", "answer": "토큰마다 다른 토큰의 정보를 얼마나 참고할지 정하는 방식이에요."}
+  ]
+}
+```
+
+`answered`에는 현재 페이지의 근거 블록이 한 개 이상 들어간다. `conversation`은 인사·감사 같은 짧은 대화이고,
+`insufficient_evidence`는 현재 페이지에서 답을 뒷받침할 내용을 찾지 못한 경우다. 두 경우 모두 근거 목록은 비어 있으며
+화면은 `explanation`을 그대로 표시한다. 근거가 있으면 기존 `/learning.evidence_blocks`에서 같은 `block_id`를 찾아 강조한다.
+서버는 해당 페이지의 텍스트·표로 Gemini를 호출하며, 대화 기록은 요청 처리에만 사용한다.
 `/health` 성공은 DB·S3·워커·Gemini 상태까지 보장하지 않는다.
 
 ## 화면 연결 순서
