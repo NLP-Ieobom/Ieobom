@@ -12,7 +12,7 @@ from app.pipelines.docling_output import _pages
 from app.models.learning import CourseLearningProfile, CourseResearchCache
 from app.pipelines.learning import answer_follow_up, generate_learning
 from app.schemas.learning import (
-    AskRequest, FollowUpAnswer, PageDrafts, PageSelections, PaperSummaries, ResearchDirections,
+    AskRequest, ChatExchange, FollowUpAnswer, PageDrafts, PageSelections, PaperSummaries, ResearchDirections,
     ResearchQueries,
 )
 
@@ -299,7 +299,7 @@ class LearningContractTest(TestCase):
         with self.assertRaisesRegex(ProviderError, "Invalid or duplicate answer evidence"):
             answer_follow_up(self.gemini, page, question)
 
-    def test_chat_request_trims_history_and_limits_context_size(self):
+    def test_chat_request_trims_question_and_ignores_client_history(self):
         request = AskRequest(
             question="  그럼 어떻게 비교하나요?  ",
             history=[
@@ -308,35 +308,24 @@ class LearningContractTest(TestCase):
             ],
         )
         self.assertEqual(request.question, "그럼 어떻게 비교하나요?")
-        self.assertEqual(
-            [exchange.model_dump() for exchange in request.history],
-            [{"question": f"질문 {number}", "answer": f"답변 {number}"} for number in range(1, 4)],
-        )
-        self.assertEqual(AskRequest(question="안녕").history, [])
+        self.assertEqual(request.model_dump(), {"question": "그럼 어떻게 비교하나요?"})
         for invalid in (
             {"question": " "},
             {"question": "q" * 1001},
-            {"question": "질문", "history": [{"question": "질문", "answer": "답변"}] * 4},
-            {"question": "질문", "history": [{"question": " ", "answer": "답변"}]},
-            {"question": "질문", "history": [{"question": "q" * 1001, "answer": "답변"}]},
-            {"question": "질문", "history": [{"question": "질문", "answer": " "}]},
-            {"question": "질문", "history": [{"question": "질문", "answer": "a" * 3001}]},
         ):
             with self.subTest(invalid=invalid):
                 with self.assertRaises(ValidationError):
                     AskRequest.model_validate(invalid)
 
     def test_follow_up_passes_history_without_expanding_page_evidence(self):
-        request = AskRequest(
-            question="그 내용이 여기에도 있나요?",
-            history=[{"question": "이전 페이지의 근거는?", "answer": "p1-b1을 살펴보세요."}],
-        )
+        request = AskRequest(question="그 내용이 여기에도 있나요?")
+        history = [ChatExchange(question="이전 페이지의 근거는?", answer="p1-b1을 살펴보세요.")]
         page = self.extraction["pages"][1]
         self.gemini.generate.return_value = FollowUpAnswer(
             explanation="현재 페이지는 함수 종속성과 분해를 다룹니다.",
             evidence_block_ids=["p2-b1"],
         )
-        answer_follow_up(self.gemini, page, request.question, request.history)
+        answer_follow_up(self.gemini, page, request.question, history)
         payload = self.gemini.generate.call_args.args[1]
         self.assertEqual(payload["question"], request.question)
         self.assertEqual(payload["history"], [
@@ -345,7 +334,7 @@ class LearningContractTest(TestCase):
         self.assertEqual(payload["page"]["page_number"], 2)
         self.gemini.generate.return_value.evidence_block_ids = ["p1-b1"]
         with self.assertRaisesRegex(ProviderError, "Invalid or duplicate answer evidence"):
-            answer_follow_up(self.gemini, page, request.question, request.history)
+            answer_follow_up(self.gemini, page, request.question, history)
 
     def test_follow_up_accepts_conversation_and_insufficient_evidence_without_citations(self):
         for status, question, explanation in (

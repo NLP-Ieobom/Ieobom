@@ -166,9 +166,20 @@ class StoredPageLearning(PageLearning):
 
 class ChatExchange(StructuredOutput):
     question: ChatQuestion
-    answer: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=3000)]
+    answer: Text
 
 
 class AskRequest(BaseModel):
     question: ChatQuestion
-    history: list[ChatExchange] = Field(default_factory=list, max_length=3)
+
+
+class StoredChatExchange(FollowUpAnswer):
+    id: UUID
+    question: str
+    created_at: datetime
+
+
+class ChatHistoryResponse(BaseModel):
+    document_id: UUID
+    page_number: int
+    exchanges: list[StoredChatExchange]

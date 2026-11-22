@@ -3,7 +3,7 @@ import uuid
 from typing import Annotated
 
 from botocore.exceptions import BotoCoreError, ClientError
-from fastapi import APIRouter, Depends, HTTPException, Path, Response
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
@@ -19,6 +19,7 @@ from app.models.course import Course
 from app.models.document import Document, DocumentStatus
 from app.models.document_page import DocumentPage
 from app.models.learning import DocumentLearning
+from app.models.page_chat import PageChat
 from app.models.question import Question
 from app.models.reading_progress import UserDocumentProgress, UserPageView
 from app.models.saved_question import SavedQuestion
@@ -36,7 +37,13 @@ from app.schemas.document import (
     UploadUrlResponse,
 )
 from app.schemas.note import NoteResponse, NoteUpdateRequest
-from app.schemas.learning import AskRequest, FollowUpAnswer, StoredPageLearning
+from app.schemas.learning import (
+    AskRequest,
+    ChatExchange,
+    ChatHistoryResponse,
+    StoredChatExchange,
+    StoredPageLearning,
+)
 from app.schemas.question import QuestionListResponse, QuestionResponse
 from app.schemas.progress import DocumentProgressResponse, ProgressUpdateRequest
 from app.services.reading_progress import get_document_progress
@@ -471,15 +478,52 @@ def get_page_learning(
     return response
 
 
-@router.post("/{document_id}/pages/{page_number}/ask", response_model=FollowUpAnswer)
+@router.get(
+    "/{document_id}/pages/{page_number}/chat", response_model=ChatHistoryResponse,
+    summary="페이지 채팅 내역 조회",
+    description="본인의 최근 대화를 기본 20쌍, 최대 50쌍까지 오래된 순서로 반환합니다. 내역이 없으면 빈 배열입니다.",
+)
+def get_page_chat(
+    document_id: uuid.UUID,
+    page_number: Annotated[int, Path(ge=1)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ChatHistoryResponse:
+    document = _get_owned_document(db, document_id, current_user)
+    _check_page_number(document, page_number)
+    rows = (
+        db.query(PageChat)
+        .join(DocumentPage, PageChat.document_page_id == DocumentPage.id)
+        .filter(
+            PageChat.user_id == current_user.id,
+            DocumentPage.document_id == document_id,
+            DocumentPage.page_number == page_number,
+        )
+        .order_by(PageChat.created_at.desc(), PageChat.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return ChatHistoryResponse(
+        document_id=document_id, page_number=page_number,
+        exchanges=[StoredChatExchange.model_validate(row, from_attributes=True) for row in reversed(rows)],
+    )
+
+
+@router.post(
+    "/{document_id}/pages/{page_number}/ask", response_model=StoredChatExchange,
+    summary="페이지 질문과 답변 저장",
+    description="서버에 저장된 같은 페이지의 최근 3쌍으로 답변을 생성하고, 질문과 답변을 저장한 뒤 반환합니다.",
+)
 def ask_about_page(
     document_id: uuid.UUID,
-    page_number: int,
+    page_number: Annotated[int, Path(ge=1)],
     payload: AskRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> FollowUpAnswer:
-    _get_owned_document(db, document_id, current_user)
+) -> StoredChatExchange:
+    document = _get_owned_document(db, document_id, current_user)
+    _check_page_number(document, page_number)
     learning = db.get(DocumentLearning, document_id)
     if learning is None or learning.result is None:
         raise HTTPException(status_code=404, detail="learning content not available")
@@ -489,10 +533,37 @@ def ask_about_page(
     if not result["analysis"]["question_eligible"]:
         raise HTTPException(status_code=409, detail="page has no eligible lecture content")
     page = next(page for page in learning.extraction["pages"] if page["page_number"] == page_number)
+    page_id = db.query(DocumentPage.id).filter_by(document_id=document_id, page_number=page_number).scalar()
+    if page_id is None:
+        raise HTTPException(status_code=404, detail="page not found")
+    user_id = current_user.id
+    rows = (
+        db.query(PageChat)
+        .filter_by(user_id=user_id, document_page_id=page_id)
+        .order_by(PageChat.created_at.desc(), PageChat.id.desc())
+        .limit(3)
+        .all()
+    )
+    history = [ChatExchange(question=row.question, answer=row.explanation) for row in reversed(rows)]
     db.rollback()  # 외부 호출을 기다리는 동안 조회 트랜잭션을 열어 두지 않는다.
     if not os.environ.get("GEMINI_API_KEY", "").strip():
         raise HTTPException(status_code=503, detail="follow-up questions are unavailable")
     try:
-        return answer_follow_up(Gemini(), page, payload.question, payload.history)
+        answer = answer_follow_up(Gemini(), page, payload.question, history)
     except ProviderError:
         raise HTTPException(status_code=502, detail="could not generate a grounded answer") from None
+    try:
+        # 답변을 생성하는 사이 문서가 삭제됐을 수 있어 저장 직전에 다시 확인한다.
+        _get_owned_document(db, document_id, current_user, lock=True)
+        exchange = PageChat(
+            user_id=user_id, document_page_id=page_id, question=payload.question,
+            **answer.model_dump(),
+        )
+        db.add(exchange)
+        db.flush()
+        response = StoredChatExchange.model_validate(exchange, from_attributes=True)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(status_code=503, detail="could not save chat response; retry later") from None
+    return response
