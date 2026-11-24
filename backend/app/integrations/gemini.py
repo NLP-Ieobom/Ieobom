@@ -16,13 +16,15 @@ USAGE_FIELDS = ("promptTokenCount", "candidatesTokenCount", "thoughtsTokenCount"
 
 
 class Gemini:
-    def __init__(self, tags: dict | None = None):
+    def __init__(self, tags: dict | None = None, sink=None):
         api_key = os.environ.get("GEMINI_API_KEY", "").strip()
         if not api_key:
             raise ProviderError("GEMINI_API_KEY is required", retryable=False)
         self.headers = {"x-goog-api-key": api_key}
         # 잡 하나가 인스턴스 하나를 쓰니 문서·잡 ID를 여기 담아 두면 호출마다 다시 넘기지 않아도 된다
         self.tags = tags or {}
+        # DB에 기록할 때만 넘긴다. CLI와 테스트는 DB가 없어서 로그 한 줄로 끝난다.
+        self.sink = sink
         self.text_model = os.environ.get("GEMINI_TEXT_MODEL", "gemini-2.5-flash").removeprefix("models/")
         self.embedding_model = os.environ.get("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001").removeprefix("models/")
 
@@ -34,6 +36,8 @@ class Gemini:
             "elapsed_ms": elapsed_ms,
             **{field: usage[field] for field in USAGE_FIELDS if field in usage},
         }, ensure_ascii=False), flush=True)
+        if self.sink is not None:
+            self.sink(call=call, model=model, attempt=attempt, elapsed_ms=elapsed_ms, usage=usage)
 
     def generate(self, instructions: str, data: dict, schema: type[T], *, call: str, attempt: int = 1) -> T:
         payload = {

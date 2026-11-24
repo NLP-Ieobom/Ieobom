@@ -14,6 +14,7 @@ from app.models import (  # noqa: F401  # 모델을 Base.metadata에 등록하�
     curriculum,
     document,
     document_page,
+    gemini_usage,
     learning,
     page_chat,
     question,
