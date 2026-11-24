@@ -57,7 +57,7 @@ def import_catalog(db: Session, gemini: Gemini, path: Path, curriculum_id: UUID)
         entries = catalog[offset:offset + 20]
         vectors.extend(gemini.embed(
             ["\n".join([entry["name"], *entry["topics"]])[:8000] for entry in entries],
-            "RETRIEVAL_DOCUMENT",
+            "RETRIEVAL_DOCUMENT", call="COURSE_EMBED",
         ))
 
     for entry, vector in zip(catalog, vectors, strict=True):

@@ -209,7 +209,8 @@ def process(db, job) -> None:
         def on_progress(completed: int) -> None:
             set_job_stage(db, job, "analyzing", completed_pages=completed, total_pages=total_pages)
 
-        result = generate_learning(db, Gemini(), course, learning.extraction, on_progress=on_progress)
+        gemini = Gemini({"document_id": str(document_id), "job_id": str(job.id)})
+        result = generate_learning(db, gemini, course, learning.extraction, on_progress=on_progress)
         lock_job(db, job)
         page_ids = dict(db.execute(select(DocumentPage.page_number, DocumentPage.id).where(
             DocumentPage.document_id == document_id,

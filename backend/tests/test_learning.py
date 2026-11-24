@@ -163,7 +163,7 @@ class LearningContractTest(TestCase):
                 )
                 self.assertEqual([item["question_number"] for item in search_request["questions"]], [1, 2])
                 self.gemini.embed.assert_called_once_with(
-                    ["함수 종속성에 따른 분해\n함수 종속성"], "RETRIEVAL_QUERY"
+                    ["함수 종속성에 따른 분해\n함수 종속성"], "RETRIEVAL_QUERY", call="SLIDE_EMBED"
                 )
                 # pgvector 검색 쿼리에 학기 조건이 들어갔는지 확인한다
                 queries = [str(call.args[0].compile()) for call in self.db.execute.call_args_list]

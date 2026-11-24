@@ -172,10 +172,10 @@ def _check_page(draft: PageDraft, page: dict, evidence: set[str], existing: Page
         _check_draft(draft, evidence)
 
 
-def _generate_checked(gemini, instructions, data, schema, check):
+def _generate_checked(gemini, instructions, data, schema, check, call):
     # 개수·참조 규칙을 어긴 응답은 그 묶음만 다시 요청한다. 한 묶음 때문에 문서 전체를 다시 만들지 않는다.
     for attempt in range(1, OUTPUT_ATTEMPTS + 1):
-        output = gemini.generate(instructions, data, schema)
+        output = gemini.generate(instructions, data, schema, call=call, attempt=attempt)
         try:
             return check(output)
         except ProviderError as error:
@@ -201,7 +201,7 @@ def _select_links(db, gemini, course, drafts, papers, has_profiles, semester_ord
         vectors = gemini.embed([
             "\n".join([draft.analysis.summary, *[concept.name for concept in draft.analysis.concepts]])
             for draft in active
-        ], "RETRIEVAL_QUERY")
+        ], "RETRIEVAL_QUERY", call="SLIDE_EMBED")
         for draft, vector in zip(active, vectors, strict=True):
             if semester_order is None:
                 candidates[draft.page_number] = search(
@@ -279,7 +279,7 @@ def _select_links(db, gemini, course, drafts, papers, has_profiles, semester_ord
         "paper_candidates": [{
             "paper_id": alias, "title": paper.title, "summary": paper.summary,
         } for alias, paper in paper_aliases.items()],
-    }, PageSelections, check)
+    }, PageSelections, check, "SELECT_LINKS")
 
 
 def generate_learning(
@@ -359,7 +359,7 @@ def generate_learning(
                 return generated.pages
 
             for draft in _generate_checked(
-                gemini, ANALYZE, {"course": course_context, "pages": prompt}, PageDrafts, check,
+                gemini, ANALYZE, {"course": course_context, "pages": prompt}, PageDrafts, check, "ANALYZE",
             ):
                 drafts[draft.page_number] = draft
 
@@ -400,6 +400,7 @@ def answer_follow_up(
         FOLLOW_UP,
         {"question": question, "history": [exchange.model_dump() for exchange in history], "page": payload},
         FollowUpAnswer,
+        call="FOLLOW_UP",
     )
     _validate_references(
         answer.evidence_block_ids, {block["block_id"] for block in payload["blocks"]}, "answer evidence"
