@@ -1,0 +1,28 @@
+# Dependencies, build outputs and local settings
+node_modules/
+dist/
+.vite/
+coverage/
+.vercel/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+*.tsbuildinfo
+
+# Local review snapshots (kept on disk)
+/review/
+
+# Figma runtime tools are local; the build needs site.json
+/.figma/*
+!/.figma/make/
+/.figma/make/*
+!/.figma/make/site.json
+
+# Original image source; the app uses src/assets/question-marker.png
+/src/물음표 디자인.svg
+/src/물음표 디자인.svg
+
+/BACKEND_GAPS.md
+/tests/
