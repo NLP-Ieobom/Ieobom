@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/api/v1/:path*",
+      "destination": "https://13-209-160-89.sslip.io/api/v1/:path*"
+    },
+    {
+      "source": "/pdf-file/:path*",
+      "destination": "https://ieobom-materials.s3.amazonaws.com/:path*"
+    }
+  ]
+}
