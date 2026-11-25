@@ -51,6 +51,9 @@ def seed_curriculum(db: Session, graph: dict) -> uuid.UUID:
         course.name = node["name"]
         course.course_code = course_code
         course.curriculum_year = curriculum.entry_year
+        course.year_level = min(placement["year"] for placement in node["placements"])
+        course.semesters = sorted({placement["semester"] for placement in node["placements"]})
+        course.areas = node["official_areas"]
         course_ids[node["course_id"]] = course.id
     db.flush()
 

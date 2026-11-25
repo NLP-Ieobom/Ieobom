@@ -97,6 +97,9 @@ type CourseSummary = {
   name: string;
   course_code: string | null;
   curriculum_year: number | null;
+  year_level: number | null;
+  semesters: number[];
+  areas: string[];
 };
 type CourseWithEnrollment = CourseSummary & {
   enrollment_status: EnrollmentStatus;
@@ -119,10 +122,16 @@ type CurriculumMapResponse = {
 둘 다 `?curriculum_id=<UUID>`로 한 커리큘럼에 한정한다. 필터 없는 전체 목록에는 소속 미정 과목도 나온다.
 과목은 이름순이며 커리큘럼 목록은 실제 자료가 데모보다 먼저 나온다.
 `entry_year`는 입학 기준 교육과정 연도이고, `is_demo=true`는 임시 시연용 커리큘럼이다.
+`year_level`은 교육과정표에 배치된 학년, `semesters`는 그 학년에서 개설되는 학기, `areas`는 영역 구분이다.
+같은 학년의 1·2학기 양쪽에 열리는 과목과 두 영역에 걸친 과목이 있어서 둘 다 목록이다. `areas`는 어느
+영역에도 속하지 않는 과목이 있어서 비어 있을 수 있다. 배치 자료가 없는 커리큘럼은 `year_level=null`,
+`semesters=[]`, `areas=[]`로 내려간다.
 
 하나의 커리큘럼 상세와 지도는 `/map`으로 받는다. 별도 `GET /curricula/{id}`는 없다.
 지도에는 미수강 과목도 포함하므로 `enrollment_status`로 흑백·수강 중·완료 표시를 나눈다.
-관계는 `source_course_id`에서 `target_course_id`로 연결한다. 화면 배치 좌표·학년·학기 정보는 응답에 없다.
+관계는 `source_course_id`에서 `target_course_id`로 연결한다. 화면 배치 좌표는 응답에 없다.
+학년·학기·영역으로 거르는 쿼리는 두지 않는다. 연결의 절반 이상이 서로 다른 영역을 이어서 서버에서 거르면
+관계가 잘린다. 과목과 관계를 모두 받아 화면에서 거른다.
 관계가 없으면 `relations=[]`다. `source=ssu_2026_provisional`은 숭실대 AI소프트웨어학부 2026학년도
 시연용 학습 순서를 뜻한다. 두 시연 데이터 출처(`ssu_2026_provisional`, `demo`)의
 `relation_type=recommended`는 화면에 학습 추천으로 표시한다.

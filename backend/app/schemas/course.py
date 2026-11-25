@@ -12,6 +12,9 @@ class CourseSummary(BaseModel):
     name: str
     course_code: str | None
     curriculum_year: int | None
+    year_level: int | None
+    semesters: list[int]
+    areas: list[str]
 
 
 class CourseListResponse(BaseModel):
