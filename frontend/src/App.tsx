@@ -576,6 +576,7 @@ function PageLearning({ documentId, page, panelMode, setPanelMode, drafts, chatD
   const active = useRef(true)
   const messagesEnd = useRef<HTMLDivElement>(null)
   const analysisKey = `${analysisStatus?.job_status ?? ""}:${analysisStatus?.stage ?? ""}:${analysisAttempt}`
+  const learningKey = `${analysisKey}:${analysisStatus?.completed_pages ?? 0}`
   useEffect(() => { active.current = true; return () => { active.current = false } }, [])
   useEffect(() => {
     let cancelled = false
@@ -604,7 +605,7 @@ function PageLearning({ documentId, page, panelMode, setPanelMode, drafts, chatD
     }
     void load()
     return () => { cancelled = true }
-  }, [documentId, page, attempt, analysisKey])
+  }, [documentId, page, attempt, learningKey])
   useEffect(() => {
     if (scope !== "document") return
     let cancelled = false
@@ -612,7 +613,7 @@ function PageLearning({ documentId, page, panelMode, setPanelMode, drafts, chatD
     listDocumentQuestions(documentId).then(result => { if (!cancelled) setAllQuestions(result.questions) })
       .catch(() => { if (!cancelled) setAllError("PDF 전체 질문을 불러오지 못했어요.") }).finally(() => { if (!cancelled) setAllLoading(false) })
     return () => { cancelled = true }
-  }, [documentId, scope, attempt, analysisKey])
+  }, [documentId, scope, attempt, learningKey])
   useEffect(() => {
     let cancelled = false
     setChatLoading(true); setChatReady(false); setChatError("")
@@ -669,6 +670,15 @@ function PageLearning({ documentId, page, panelMode, setPanelMode, drafts, chatD
   }
   const visibleQuestions = scope === "document" ? allQuestions : questions
   const waiting = !analysisStatus || !documentState(analysisStatus).terminal
+  const emptyTitle = scope === "page" && learning?.analysis.question_eligible === false
+    ? "질문 생성 대상이 아닌 페이지예요"
+    : waiting ? "질문을 분석하고 있어요"
+    : analysisStatus?.job_status === "failed" ? "아직 분석을 마치지 못했어요"
+    : analysisStatus?.stage === "analysis_skipped" ? "질문 분석이 생략됐어요" : "추천 질문이 없어요"
+  const emptyDescription = scope === "page" && learning
+    ? "다른 페이지의 질문도 살펴보세요."
+    : waiting ? "완료된 페이지의 질문부터 자동으로 표시해요."
+    : analysisStatus?.can_retry ? "분석을 다시 시도하면 완료된 부분에 이어서 진행해요." : "다른 페이지의 질문도 살펴보세요."
   const canChat = Boolean(learning?.analysis.question_eligible && chatReady && !chatLoading && !chatBusy)
   return <aside className="assistant-panel">
     <div className="assistant-tabs" role="tablist" aria-label="학습 도구">{([{ mode: "notes", icon: "note", label: "메모" }, { mode: "questions", icon: "spark", label: "발견 질문" }, { mode: "chat", icon: "chat", label: "AI 대화" }] as const).map(tab => <button key={tab.mode} id={`learning-tab-${tab.mode}`} aria-controls={`learning-panel-${tab.mode}`} className={panelMode === tab.mode ? "active" : ""} role="tab" aria-selected={panelMode === tab.mode} onClick={() => setPanelMode(tab.mode)}><Icon name={tab.icon} size={15} />{tab.label}{tab.mode === "questions" && questions.length > 0 && <i />}</button>)}</div>
@@ -684,8 +694,9 @@ function PageLearning({ documentId, page, panelMode, setPanelMode, drafts, chatD
       <div className="question-scope" role="group" aria-label="질문 범위"><button aria-pressed={scope === "page"} onClick={() => setScope("page")}>현재 페이지</button><button aria-pressed={scope === "document"} onClick={() => setScope("document")}>PDF 전체 질문</button></div>
       {(learningError || allError) && <p role="alert">{learningError || allError}<button onClick={() => setAttempt(value => value + 1)}>다시 시도</button></p>}
       {scope === "document" && allLoading && <p role="status">전체 질문을 불러오고 있어요.</p>}
+      {scope === "document" && waiting && visibleQuestions.length > 0 && <p role="status">완료된 페이지의 질문이에요. 나머지도 분석되는 대로 추가돼요.</p>}
       <div className="question-list">{visibleQuestions.map((question, index) => <div key={question.id} id={`discovered-question-${question.id}`} tabIndex={-1} className={focusedQuestion === question.id ? "question-marker-target" : undefined}><QuestionCard compact selected={focusedQuestion === question.id} number={index + 1} question={question} onChange={updateQuestion} onOpen={onNavigate ? () => onNavigate(question.page_number) : undefined} /></div>)}</div>
-      {!loading && !allLoading && !learningError && !allError && !visibleQuestions.length && <div className="question-waiting"><span><Icon name="spark" size={22} /></span><strong>{waiting ? "질문을 분석하고 있어요" : analysisStatus?.stage === "analysis_skipped" ? "질문 분석이 생략됐어요" : learning?.analysis.question_eligible === false ? "질문 생성 대상이 아닌 페이지예요" : "추천 질문이 없어요"}</strong><p>{waiting ? "분석이 끝나면 자동으로 표시해요." : "다른 페이지의 질문도 살펴보세요."}</p></div>}
+      {!loading && !allLoading && !learningError && !allError && !visibleQuestions.length && <div className="question-waiting"><span><Icon name="spark" size={22} /></span><strong>{emptyTitle}</strong><p>{emptyDescription}</p></div>}
       {learning?.research_status === "unavailable" && <p className="research-status">관련 연구 정보를 불러오지 못했어요.</p>}
     </div>}
     {panelMode === "chat" && <div className="chat-view" role="tabpanel" id="learning-panel-chat" aria-labelledby="learning-tab-chat"><div className="assistant-head"><div className="ai-orb"><Icon name="chat" size={19} /></div><div><span>AI LEARNING ASSISTANT</span><h2>AI와 함께 깊게 읽기</h2></div></div>

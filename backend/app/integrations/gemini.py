@@ -11,6 +11,7 @@ from app.integrations.learning_http import ProviderError, request_json
 T = TypeVar("T", bound=BaseModel)
 EMBEDDING_DIM = 1536
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
+RETRY_DELAYS = (5, 15, 30)
 # 사고 토큰은 출력으로 과금되고 캐시된 입력은 단가가 다르다. 원가를 계산하려면 네 개가 다 필요하다.
 USAGE_FIELDS = ("promptTokenCount", "candidatesTokenCount", "thoughtsTokenCount", "cachedContentTokenCount")
 
@@ -28,16 +29,40 @@ class Gemini:
         self.text_model = os.environ.get("GEMINI_TEXT_MODEL", "gemini-2.5-flash").removeprefix("models/")
         self.embedding_model = os.environ.get("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001").removeprefix("models/")
 
-    def _log_usage(self, response: dict, *, call: str, model: str, attempt: int, started: float) -> None:
+    def _log_usage(
+        self, response: dict, *, call: str, model: str, attempt: int, request_attempt: int, started: float,
+    ) -> None:
         usage = response.get("usageMetadata") or {}
         elapsed_ms = round((time.monotonic() - started) * 1000)
         print(json.dumps({
             "event": "gemini_usage", **self.tags, "call": call, "model": model, "attempt": attempt,
-            "elapsed_ms": elapsed_ms,
+            "request_attempt": request_attempt, "elapsed_ms": elapsed_ms,
             **{field: usage[field] for field in USAGE_FIELDS if field in usage},
         }, ensure_ascii=False), flush=True)
         if self.sink is not None:
             self.sink(call=call, model=model, attempt=attempt, elapsed_ms=elapsed_ms, usage=usage)
+
+    def _request(self, path: str, payload: dict, *, call: str, model: str, attempt: int = 1) -> dict:
+        # 형식 검증 재생성(attempt)과 통신 재시도(request_attempt)는 따로 센다.
+        for request_attempt, delay in enumerate((*RETRY_DELAYS, None), 1):
+            started = time.monotonic()
+            try:
+                response = request_json(
+                    f"{BASE_URL}/{path}", provider="Gemini", headers=self.headers, payload=payload, timeout=90,
+                )
+            except ProviderError as error:
+                print(json.dumps({
+                    "event": "gemini_request_failed", **self.tags, "call": call, "model": model,
+                    "attempt": attempt, "request_attempt": request_attempt, "error": str(error),
+                }, ensure_ascii=False), flush=True)
+                if not error.retryable or delay is None:
+                    raise
+                time.sleep(delay)
+                continue
+            self._log_usage(
+                response, call=call, model=model, attempt=attempt, request_attempt=request_attempt, started=started,
+            )
+            return response
 
     def generate(self, instructions: str, data: dict, schema: type[T], *, call: str, attempt: int = 1) -> T:
         payload = {
@@ -51,16 +76,11 @@ class Gemini:
                 "maxOutputTokens": 32768,
             },
         }
-        started = time.monotonic()
-        response = request_json(
-            f"{BASE_URL}/models/{self.text_model}:generateContent",
-            provider="Gemini",
-            headers=self.headers,
-            payload=payload,
-            timeout=90,
+        # 검증에 걸린 응답도 토큰을 썼으므로 _request에서 사용량을 먼저 기록한다.
+        response = self._request(
+            f"models/{self.text_model}:generateContent", payload,
+            call=call, model=self.text_model, attempt=attempt,
         )
-        # 검증에 걸려 버리는 응답도 토큰을 쓴 것이라 파싱 전에 남긴다
-        self._log_usage(response, call=call, model=self.text_model, attempt=attempt, started=started)
         try:
             candidate = response["candidates"][0]
             if candidate.get("finishReason") != "STOP":
@@ -77,12 +97,9 @@ class Gemini:
         if not texts:
             return []
         model = f"models/{self.embedding_model}"
-        started = time.monotonic()
-        response = request_json(
-            f"{BASE_URL}/{model}:batchEmbedContents",
-            provider="Gemini",
-            headers=self.headers,
-            payload={"requests": [
+        response = self._request(
+            f"{model}:batchEmbedContents",
+            {"requests": [
                 {
                     "model": model,
                     "content": {"parts": [{"text": text}]},
@@ -91,10 +108,8 @@ class Gemini:
                 }
                 for text in texts
             ]},
-            timeout=90,
+            call=call, model=self.embedding_model,
         )
-        # batchEmbedContents가 usageMetadata를 주는지 실제 응답으로 확인하지 못했다. 없으면 토큰 필드만 빠진다.
-        self._log_usage(response, call=call, model=self.embedding_model, attempt=1, started=started)
         try:
             vectors = [item["values"] for item in response["embeddings"]]
             if len(vectors) != len(texts) or any(

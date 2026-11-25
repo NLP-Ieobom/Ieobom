@@ -179,7 +179,7 @@ def get_status(
     if document.status == DocumentStatus.PENDING_UPLOAD.value:
         stage = "uploading"
     progress = None
-    if job and stage in {"analyzing", "completed"} and job.completed_pages is not None and job.total_pages:
+    if job and job.completed_pages is not None and job.total_pages:
         progress = job.completed_pages * 100 // job.total_pages
     return StatusResponse(
         document_id=document.id,
@@ -215,12 +215,13 @@ def retry_analysis(
     if not os.environ.get("GEMINI_API_KEY", "").strip():
         raise HTTPException(status_code=503, detail="question generation is not configured")
 
-    # 같은 문서의 재시도 요청은 문서 행 잠금으로 직렬화한다. 기존 추출·메모·진도는 유지한다.
+    # 같은 문서의 재시도 요청은 문서 행 잠금으로 직렬화한다. 완료한 페이지는 다시 만들지 않는다.
+    learning = db.get(DocumentLearning, document_id)
     job.status = "pending"
     job.stage = "queued"
     job.attempt = 0
-    job.completed_pages = None
-    job.total_pages = None
+    job.completed_pages = len(learning.result["pages"]) if learning is not None and learning.result is not None else 0
+    job.total_pages = document.page_count
     job.error_code = None
     job.error_message = None
     job.locked_by = None
@@ -464,10 +465,10 @@ def get_page_learning(
     _check_page_number(document, page_number)
     learning = db.get(DocumentLearning, document_id)
     if learning is None or learning.result is None:
-        raise HTTPException(status_code=404, detail="learning content not available")
+        raise HTTPException(status_code=409, detail="page analysis not completed yet")
     page = learning.result["pages"].get(str(page_number))
     if page is None:
-        raise HTTPException(status_code=404, detail="page not found")
+        raise HTTPException(status_code=409, detail="page analysis not completed yet")
     response = StoredPageLearning.model_validate(page)
     if response.questions:
         saved_ids = {row[0] for row in db.query(SavedQuestion.question_id).filter(
@@ -527,10 +528,10 @@ def ask_about_page(
     _check_page_number(document, page_number)
     learning = db.get(DocumentLearning, document_id)
     if learning is None or learning.result is None:
-        raise HTTPException(status_code=404, detail="learning content not available")
+        raise HTTPException(status_code=409, detail="page analysis not completed yet")
     result = learning.result["pages"].get(str(page_number))
     if result is None:
-        raise HTTPException(status_code=404, detail="page not found")
+        raise HTTPException(status_code=409, detail="page analysis not completed yet")
     if not result["analysis"]["question_eligible"]:
         raise HTTPException(status_code=409, detail="page has no eligible lecture content")
     page = next(page for page in learning.extraction["pages"] if page["page_number"] == page_number)
