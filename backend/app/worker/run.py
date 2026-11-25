@@ -22,6 +22,7 @@ from app.models.document_page import DocumentPage
 from app.models.learning import DocumentLearning
 from app.models.question import Question
 from app.pipelines.learning import generate_learning
+from app.services.usage import usage_sink
 
 WORKER_ID = os.environ.get("WORKER_ID", "worker-1")
 POLL_INTERVAL_SEC = int(os.environ.get("WORKER_POLL_INTERVAL_SEC", "3"))
@@ -209,7 +210,10 @@ def process(db, job) -> None:
         def on_progress(completed: int) -> None:
             set_job_stage(db, job, "analyzing", completed_pages=completed, total_pages=total_pages)
 
-        result = generate_learning(db, Gemini(), course, learning.extraction, on_progress=on_progress)
+        gemini = Gemini(
+            {"document_id": str(document_id), "job_id": str(job.id)}, sink=usage_sink(document_id),
+        )
+        result = generate_learning(db, gemini, course, learning.extraction, on_progress=on_progress)
         lock_job(db, job)
         page_ids = dict(db.execute(select(DocumentPage.page_number, DocumentPage.id).where(
             DocumentPage.document_id == document_id,

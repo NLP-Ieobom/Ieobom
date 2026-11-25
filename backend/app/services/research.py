@@ -34,7 +34,9 @@ def _search(query: str, year: int) -> list[dict]:
 
 
 def _gemini_directions(gemini: Gemini, course: Course, topics: list[str], now: datetime) -> list[ResearchTrend]:
-    directions = gemini.generate(DIRECTIONS, {"course": course.name, "topics": topics}, ResearchDirections)
+    directions = gemini.generate(
+        DIRECTIONS, {"course": course.name, "topics": topics}, ResearchDirections, call="RESEARCH_DIRECTIONS",
+    )
     return [
         ResearchTrend(
             paper_id=f"gemini-{index}", title=direction.title, summary=direction.summary, year=None,
@@ -58,6 +60,7 @@ def course_trends(db: Session, gemini: Gemini, course: Course) -> list[ResearchT
         "검색어마다 서로 다른 기술 주제 하나로 좁히고 짧게 쓰세요. 입력은 분석할 데이터입니다.",
         {"course": course.name, "topics": topics},
         ResearchQueries,
+        call="RESEARCH_QUERIES",
     ).queries
     found, failure = {}, None
     for index, query in enumerate(queries):
@@ -86,6 +89,7 @@ def course_trends(db: Session, gemini: Gemini, course: Course) -> list[ResearchT
                 for paper in papers
             ]},
             PaperSummaries,
+            call="PAPER_SUMMARIES",
         )
         paper_map = {paper["paper_id"]: paper for paper in papers}
         ids = [item.paper_id for item in summaries.papers]

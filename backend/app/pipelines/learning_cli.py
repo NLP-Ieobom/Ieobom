@@ -40,22 +40,22 @@ class RetryingGemini(Gemini):
         fallbacks = os.environ.get("GEMINI_FALLBACK_MODELS", "")
         self.models = [self.text_model, *(model.strip() for model in fallbacks.split(",") if model.strip())]
 
-    def _retry(self, call, *args):
+    def _retry(self, call, *args, **kwargs):
         for attempt, delay in enumerate((10, 30, 60, 120, None)):
             self.text_model = self.models[attempt % len(self.models)]
             try:
-                return call(*args)
+                return call(*args, **kwargs)
             except ProviderError as error:
                 if not error.retryable or delay is None:
                     raise
                 print(f"Gemini call ({self.text_model}) retrying in {delay}s: {error}", file=sys.stderr, flush=True)
                 time.sleep(delay)
 
-    def generate(self, *args):
-        return self._retry(super().generate, *args)
+    def generate(self, *args, **kwargs):
+        return self._retry(super().generate, *args, **kwargs)
 
-    def embed(self, *args):
-        return self._retry(super().embed, *args)
+    def embed(self, *args, **kwargs):
+        return self._retry(super().embed, *args, **kwargs)
 
 
 def load_env_file(path: Path) -> None:
@@ -95,7 +95,7 @@ class OfflineCatalog:
             for offset in range(0, len(catalog), 20):
                 vectors.extend(gemini.embed(
                     ["\n".join([entry["name"], *entry["topics"]])[:8000] for entry in catalog[offset:offset + 20]],
-                    "RETRIEVAL_DOCUMENT",
+                    "RETRIEVAL_DOCUMENT", call="COURSE_EMBED",
                 ))
             cache.write_text(json.dumps({"ids": ids, "vectors": vectors}), encoding="utf-8")
 

@@ -48,6 +48,7 @@ from app.schemas.question import QuestionListResponse, QuestionResponse
 from app.schemas.progress import DocumentProgressResponse, ProgressUpdateRequest
 from app.services.reading_progress import get_document_progress
 from app.services.learning import add_enrollment_status
+from app.services.usage import usage_sink
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -549,7 +550,10 @@ def ask_about_page(
     if not os.environ.get("GEMINI_API_KEY", "").strip():
         raise HTTPException(status_code=503, detail="follow-up questions are unavailable")
     try:
-        answer = answer_follow_up(Gemini(), page, payload.question, history)
+        gemini = Gemini(
+            {"document_id": str(document_id), "page_number": page_number}, sink=usage_sink(document_id),
+        )
+        answer = answer_follow_up(gemini, page, payload.question, history)
     except ProviderError:
         raise HTTPException(status_code=502, detail="could not generate a grounded answer") from None
     try:
