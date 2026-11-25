@@ -29,18 +29,28 @@ function PdfPage({ page, scale, questions, onQuestionClick, onRendered }: { page
     return () => { cancelled = true; task.cancel() }
   }, [page, scale])
   const markers = useMemo(() => {
-    const counts = new Map<string, number>()
-    return questions.flatMap(question => evidenceFor(question.evidence_blocks ?? [], question.evidence_block_ids ?? []).map(block => {
-      const overlap = counts.get(block.block_id) ?? 0
-      counts.set(block.block_id, overlap + 1)
-      return { question, block, overlap }
-    }))
-  }, [questions])
+    const spacing = 36
+    const maxLeft = Math.max(4, viewport.width - spacing)
+    const maxTop = Math.max(4, viewport.height - spacing)
+    const placed: { question: Question; left: number; top: number }[] = []
+    for (const question of questions) {
+      const [block] = evidenceFor(question.evidence_blocks ?? [], question.evidence_block_ids ?? [])
+      const left = block ? Math.max(4, Math.min(maxLeft, block.bbox[2] * viewport.width + 12)) : maxLeft
+      const preferredTop = block ? Math.max(4, Math.min(maxTop, (block.bbox[1] + block.bbox[3]) / 2 * viewport.height - 16)) : 4
+      const neighbors = placed.filter(marker => Math.abs(marker.left - left) < spacing)
+      const candidates = [preferredTop, ...neighbors.flatMap(marker => [marker.top + spacing, marker.top - spacing])]
+      candidates.sort((a, b) => Math.abs(a - preferredTop) - Math.abs(b - preferredTop))
+      const top = candidates.find(candidate => candidate >= 4 && candidate <= maxTop
+        && neighbors.every(marker => Math.abs(marker.top - candidate) >= spacing)) ?? preferredTop
+      placed.push({ question, left, top })
+    }
+    return placed
+  }, [questions, viewport.width, viewport.height])
   return <div className="pdf-sheet" data-pdf-page={page.pageNumber} style={{ width: viewport.width, height: viewport.height }}>
     <canvas key={`${page.pageNumber}:${scale}`} ref={canvas} aria-label={`${page.pageNumber}페이지`} style={{ width: '100%', height: '100%' }} />
-    {markers.map(({ question, block, overlap }) => {
-      return <button key={`${question.id}:${block.block_id}`} type="button" className="pdf-question-marker" aria-label={`발견 질문: ${question.content}`} title={question.content} onClick={() => onQuestionClick?.(question)} style={{ left: Math.max(4, Math.min(viewport.width - 36, block.bbox[2] * viewport.width + 12)), top: Math.max(4, Math.min(viewport.height - 36, (block.bbox[1] + block.bbox[3]) / 2 * viewport.height - 16 + overlap * 36)) }}><img src={questionMarkerUrl} alt="" draggable={false} /></button>
-    })}
+    {markers.map(({ question, left, top }) => (
+      <button key={question.id} type="button" className="pdf-question-marker" aria-label={`발견 질문: ${question.content}`} title={question.content} onClick={() => onQuestionClick?.(question)} style={{ left, top }}><img src={questionMarkerUrl} alt="" draggable={false} /></button>
+    ))}
     {error && <p role="alert">{error}</p>}
   </div>
 }

@@ -88,6 +88,9 @@ def get_curriculum_map(
                 name=course.name,
                 course_code=course.course_code,
                 curriculum_year=course.curriculum_year,
+                year_level=course.year_level,
+                semesters=course.semesters,
+                areas=course.areas,
                 enrollment_status=status if status is not None else "not_enrolled",
                 reading_progress=progress[course.id],
             )
@@ -100,6 +103,8 @@ def get_curriculum_map(
                 target_course_id=relation.target_course_id,
                 relation_type=relation.relation_type,
                 source=relation.source,
+                reason=relation.reason,
+                confidence=relation.confidence,
             )
             for relation in relations
         ],
