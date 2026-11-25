@@ -23,6 +23,8 @@ class CourseRelationResponse(BaseModel):
     target_course_id: uuid.UUID
     relation_type: str
     source: str
+    reason: str | None
+    confidence: str | None
 
 
 class CurriculumMapResponse(BaseModel):
