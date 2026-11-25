@@ -242,13 +242,13 @@ type StatusResponse = {
 | 상태 | 프론트 표시·처리 |
 | --- | --- |
 | `stage=uploading` | S3 업로드·완료 요청 전. 전송률은 프론트에서 계산 |
-| `pending / queued` | 분석 대기. `next_retry_at`이 있으면 자동 재시도 대기 |
+| `pending / queued` | 분석 대기. `next_retry_at`이 있으면 자동 재시도 대기. 완료된 질문은 계속 열람 가능 |
 | `running / downloading` | PDF 준비 중 |
 | `running / extracting` | PDF 내용 추출 중. 퍼센트가 `null`이면 불확정 로딩 |
-| `running / analyzing` | 질문 생성 중. 완료 페이지 / 전체 페이지와 단계 진행률 표시 |
+| `running / analyzing` | 질문 생성 중. 완료 페이지 수가 늘면 현재 페이지 `/learning`과 열린 질문 목록 갱신 |
 | `succeeded / completed` | 폴링 중단, 현재 페이지 `/learning`과 필요한 질문 목록 새로 조회 |
 | `succeeded / analysis_skipped` | 폴링 중단, 설정 미준비 안내. `can_retry=true`면 재시도 가능 |
-| `failed` | 폴링 중단, `error_message` 표시. `can_retry=true`일 때 재시도 버튼 |
+| `failed` | 폴링 중단, 완료된 질문은 유지하고 `error_message` 표시. `can_retry=true`일 때 재시도 버튼 |
 
 `/complete` 성공 이후 2~3초마다 조회한다. 실패 상태는 이전 `stage`를 유지하므로 `job_status=failed`
 판정을 먼저 한다. 기존 데이터의 `stage=null`은 단계 미상으로 처리한다. 페이지를 바꿀 때마다 새 폴링을
@@ -256,16 +256,17 @@ type StatusResponse = {
 
 `attempt`는 작업 실행 횟수이며 아직 실행 전이면 0이다. `completed_pages`, `total_pages`는 분석 진행용이고
 사용자의 열람 진도와 다르다. 생성 제외 페이지도 처리 페이지 수에 포함된다.
-진행률은 소요 시간 추정이 아닌 현재 분석 단계의 처리 페이지 비율이다. 추출 중에는 페이지 수·진행률이
-`null`일 수 있고, 분석 중에는 3페이지 묶음마다 갱신한다. `100%`만 보고 완료로 판단하지 않는다.
-질문은 마지막에 함께 저장하므로 12/27페이지를 처리했어도 앞 12페이지 질문이 먼저 나오지는 않는다.
+진행률은 소요 시간 추정이 아닌 저장이 완료된 페이지의 비율이다. 추출 중에는 페이지 수·진행률이
+`null`일 수 있고, 분석 중에는 3페이지 묶음마다 갱신한다. 재시도 대기·실패 상태에서도 저장된 진행률을 유지한다.
+12/27페이지가 완료됐다면 앞 12페이지의 질문을 먼저 조회할 수 있다. `100%`만 보고 잡 완료로 판단하지 않는다.
 
 오류 코드는 `AI_NOT_CONFIGURED`, `PDF_DOWNLOAD_FAILED`, `EXTRACTION_FAILED`, `EXTRACTION_TIMEOUT`,
 `AI_TEMPORARY_ERROR`, `AI_REQUEST_FAILED`, `ANALYSIS_FAILED`, `WORKER_INTERRUPTED`를 사용한다.
 자동 재시도 대기에서는 오류 정보가 남아 있어도 계속 폴링한다. 재시도 가능 여부는 코드명이 아닌 `can_retry`를 따른다.
 
 수동 재시도는 실패 또는 분석 생략 상태에서 가능하다. `202`를 받으면 폴링을 다시 시작한다.
-같은 잡의 `attempt`가 0으로 초기화되고, 저장된 추출·메모·진도는 유지한다. 완료된 질문을 다시 만드는 API는 아니다.
+같은 잡의 `attempt`가 0으로 초기화되고, 저장된 추출·완료 페이지·질문 UUID·저장 표시·메모·진도는 유지한다.
+미완료 묶음부터 이어서 처리한다. 완료된 질문을 다시 만드는 API는 아니다.
 
 ## 페이지 분석과 질문
 
@@ -282,7 +283,9 @@ PDF 우측 학습 패널은 `/learning` 하나로 구성할 수 있다. `/questi
 | `DELETE /questions/{question_id}/save` | 없음 | `204` | 저장 표시 해제. 이미 해제한 질문도 `204` |
 
 페이지 `/learning`·`/questions`는 업로드 미완료 또는 페이지 수 미확정이면 `409`, 범위 밖 페이지면 `422`다.
-페이지 수가 확인된 유효 페이지라도 생성 결과가 아직 없으면 `/learning`은 `404`, `/questions`는 빈 배열이다.
+페이지 수가 확인된 유효 페이지라도 생성 결과가 아직 없으면 `/learning`은 `409`, `/questions`는 빈 배열이다.
+전체 잡이 처리 중이거나 실패했어도 완료된 페이지의 `/learning`은 `200`이며, 제외 페이지는
+`question_eligible=false`, `questions=[]`인 완료 결과를 반환한다. 존재하지 않거나 타인의 문서는 `404`다.
 PDF 전체 `/questions`는 페이지 수가 미확정이어도 조회 가능하며 질문이 없으면 빈 배열이다.
 따라서 빈 질문 목록만으로 분석 완료 여부를 판단하지 않는다. 질문 저장 API도 타인·없는 질문은 `404`다.
 
@@ -464,7 +467,7 @@ type DocumentProgressResponse = DocumentReadingProgress & {
 
 | API | 입력 | 성공 | 추가 오류 |
 | --- | --- | --- | --- |
-| `POST /documents/{document_id}/pages/{page_number}/ask` | `{question: string}` | `200 StoredChatExchange` | `404` 결과·페이지 없음, `409` 업로드·추출 미완료 또는 제외 페이지, `422` 페이지 범위·질문 길이 오류, `503` 설정 없음·DB 저장 실패, `502` 생성 실패 |
+| `POST /documents/{document_id}/pages/{page_number}/ask` | `{question: string}` | `200 StoredChatExchange` | `404` 문서·페이지 없음, `409` 업로드·추출·페이지 분석 미완료 또는 제외 페이지, `422` 페이지 범위·질문 길이 오류, `503` 설정 없음·DB 저장 실패, `502` 생성 실패 |
 | `GET /documents/{document_id}/pages/{page_number}/chat` | 쿼리 `limit: 1~50`, 기본 `20` | `200 {document_id: UUID, page_number: number, exchanges: StoredChatExchange[]}` | `409` 업로드·추출 미완료, `422` 페이지 범위·limit 오류 |
 | `GET /health` | 없음. 인증 불필요, `/api/v1` 밖 | `200 {status: "ok"}` | API 프로세스 응답 확인용 |
 

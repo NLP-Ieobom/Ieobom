@@ -18,9 +18,20 @@ def request_json(url, *, provider, headers, timeout, payload=None):
             return json.load(response)
     except HTTPError as error:
         status = error.code
-        error.close()
+        try:
+            body = json.loads(error.read(4096))
+            detail = body.get("error", {}).get("message")
+        except (OSError, ValueError, AttributeError):
+            detail = None
+        finally:
+            error.close()
+        message = f"{provider} returned HTTP {status}"
+        if isinstance(detail, str):
+            message += f": {detail[:500]}"
         raise ProviderError(
-            f"{provider} returned HTTP {status}", retryable=status in (408, 429) or status >= 500
+            message, retryable=status in (408, 429) or status >= 500
         ) from None
-    except (URLError, TimeoutError, OSError, ValueError):
+    except TimeoutError:
+        raise ProviderError(f"{provider} timed out after {timeout}s") from None
+    except (URLError, OSError, ValueError):
         raise ProviderError(f"{provider} did not return a usable response") from None

@@ -284,7 +284,8 @@ def _select_links(db, gemini, course, drafts, papers, has_profiles, semester_ord
 
 def generate_learning(
     db: Session, gemini: Gemini, course: Course, extraction: dict, *, search=find_candidates,
-    on_progress: Callable[[int], None] | None = None,
+    saved_pages: dict[str, dict] | None = None,
+    on_batch: Callable[[list[dict]], None] | None = None,
 ) -> dict:
     """Turn team extraction v1 JSON into the learning JSON stored per document.
 
@@ -304,6 +305,10 @@ def generate_learning(
     if len(block_ids) != len(set(block_ids)):
         raise ValueError("Extraction contains duplicate block IDs")
 
+    results = dict(saved_pages or {})
+    if all(str(number) in results for number in page_numbers):
+        return {"schema_version": "1.0", "pages": results}
+
     has_profiles = db.scalar(select(CourseLearningProfile.course_id).join(
         Course, Course.id == CourseLearningProfile.course_id,
     ).where(
@@ -315,9 +320,10 @@ def generate_learning(
     profile = db.get(CourseLearningProfile, course.id)
     course_context = {"name": course.name, "topics": profile.topics if profile is not None else []}
     semester_order = profile.semester_order if profile is not None else None
-    results = []
     for offset in range(0, len(pages), BATCH_SIZE):
-        batch = pages[offset:offset + BATCH_SIZE]
+        batch = [page for page in pages[offset:offset + BATCH_SIZE] if str(page["page_number"]) not in results]
+        if not batch:
+            continue
         drafts = {}
         prompt = []
         evidence = {}
@@ -370,6 +376,7 @@ def generate_learning(
         links = _select_links(
             db, gemini, course, list(drafts.values()), papers, has_profiles, semester_order, search,
         )
+        completed = []
         for page in batch:
             number = page["page_number"]
             draft = drafts[number]
@@ -386,10 +393,11 @@ def generate_learning(
                 ],
                 research_status=research_status,
             )
-            results.append(result.model_dump(mode="json"))
-        if on_progress is not None:
-            on_progress(len(results))
-    return {"schema_version": "1.0", "pages": {str(page["page_number"]): page for page in results}}
+            completed.append(result.model_dump(mode="json"))
+        if on_batch is not None:
+            on_batch(completed)
+        results.update({str(page["page_number"]): page for page in completed})
+    return {"schema_version": "1.0", "pages": results}
 
 
 def answer_follow_up(

@@ -34,7 +34,7 @@ INPUT_DIR = Path("/work/input")
 
 CLAIM_SQL = text("""
     UPDATE analysis_job
-    SET status = 'running', stage = 'downloading', completed_pages = NULL, total_pages = NULL,
+    SET status = 'running', stage = 'downloading',
         locked_by = :worker_id, locked_at = clock_timestamp(), attempt = attempt + 1,
         error_code = NULL, error_message = NULL
     WHERE id = (
@@ -199,45 +199,45 @@ def process(db, job) -> None:
 
     total_pages = len(learning.extraction["pages"])
     document.page_count = total_pages
-    set_job_stage(db, job, "analyzing", completed_pages=0, total_pages=total_pages)
-    if learning.result is None:
+    saved_pages = dict(learning.result["pages"]) if learning.result is not None else {}
+    set_job_stage(db, job, "analyzing", completed_pages=len(saved_pages), total_pages=total_pages)
+    if len(saved_pages) < total_pages:
         if not os.environ.get("GEMINI_API_KEY", "").strip():
             finish_job(db, job, "succeeded", stage="analysis_skipped", error_code="AI_NOT_CONFIGURED",
                        error_message="질문 생성 설정이 준비되지 않았습니다.")
             return
         course = db.get(Course, document.course_id)
 
-        def on_progress(completed: int) -> None:
-            set_job_stage(db, job, "analyzing", completed_pages=completed, total_pages=total_pages)
+        def save_batch(pages: list[dict]) -> None:
+            lock_job(db, job)
+            page_ids = dict(db.execute(select(DocumentPage.page_number, DocumentPage.id).where(
+                DocumentPage.document_id == document_id,
+            )).all())
+            for page in pages:
+                blocks = {block["block_id"]: block for block in page["evidence_blocks"]}
+                for item in page["questions"]:
+                    question_id = uuid4()
+                    db.add(Question(
+                        id=question_id, document_page_id=page_ids[page["page_number"]],
+                        question_type=item["type"], content=item["question"],
+                        recommended_reason=item["why_recommended"],
+                        prerequisite="\n".join(item["prerequisites"]),
+                        learning_order="\n".join(item["learning_steps"]), first_activity=item["first_activity"],
+                        evidence_block_ids=item["evidence_block_ids"],
+                        evidence_blocks=[blocks[block_id] for block_id in item["evidence_block_ids"]],
+                        explanation=item["explanation"], related_courses=item["related_courses"], trends=item["trends"],
+                    ))
+                    item["id"] = str(question_id)
+                saved_pages[str(page["page_number"])] = page
+            # 질문 행·JSON·진행률을 같이 저장해야 공개된 질문을 재시도 때 다시 만들지 않는다.
+            learning.result = {"schema_version": "1.0", "pages": dict(saved_pages)}
+            set_job_stage(db, job, "analyzing", completed_pages=len(saved_pages), total_pages=total_pages)
 
         gemini = Gemini(
-            {"document_id": str(document_id), "job_id": str(job.id)}, sink=usage_sink(document_id),
+            {"document_id": str(document_id), "job_id": str(job.id), "job_attempt": job.attempt},
+            sink=usage_sink(document_id),
         )
-        result = generate_learning(db, gemini, course, learning.extraction, on_progress=on_progress)
-        lock_job(db, job)
-        page_ids = dict(db.execute(select(DocumentPage.page_number, DocumentPage.id).where(
-            DocumentPage.document_id == document_id,
-        )).all())
-        for page in result["pages"].values():
-            blocks = {block["block_id"]: block for block in page["evidence_blocks"]}
-            for item in page["questions"]:
-                question_id = uuid4()
-                db.add(Question(
-                    id=question_id, document_page_id=page_ids[page["page_number"]],
-                    question_type=item["type"], content=item["question"],
-                    recommended_reason=item["why_recommended"],
-                    prerequisite="\n".join(item["prerequisites"]),
-                    learning_order="\n".join(item["learning_steps"]), first_activity=item["first_activity"],
-                    evidence_block_ids=item["evidence_block_ids"],
-                    evidence_blocks=[blocks[block_id] for block_id in item["evidence_block_ids"]],
-                    explanation=item["explanation"], related_courses=item["related_courses"], trends=item["trends"],
-                ))
-                item["id"] = str(question_id)
-        # JSON의 ID와 실제 질문 행을 함께 커밋해야 저장 버튼이 없는 질문을 참조하지 않는다.
-        learning.result = result
-    lock_job(db, job)
-    db.execute(text("UPDATE analysis_job SET completed_pages = :total WHERE id = :id"),
-               {"total": total_pages, "id": job.id})
+        generate_learning(db, gemini, course, learning.extraction, saved_pages=saved_pages, on_batch=save_batch)
     finish_job(db, job, "succeeded", stage="completed")
 
 
