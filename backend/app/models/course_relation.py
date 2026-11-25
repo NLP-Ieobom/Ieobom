@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -18,3 +18,6 @@ class CourseRelation(Base):
     target_course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("course.id"))
     relation_type: Mapped[str] = mapped_column(String(30))
     source: Mapped[str] = mapped_column(String(30))
+    # 왜 이 순서로 이어지는지. 교육과정표와 강의계획서를 보고 적은 잠정 추천이라 과목마다 근거가 다르다.
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence: Mapped[str | None] = mapped_column(String(20), nullable=True)

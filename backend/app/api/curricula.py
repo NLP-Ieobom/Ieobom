@@ -103,6 +103,8 @@ def get_curriculum_map(
                 target_course_id=relation.target_course_id,
                 relation_type=relation.relation_type,
                 source=relation.source,
+                reason=relation.reason,
+                confidence=relation.confidence,
             )
             for relation in relations
         ],

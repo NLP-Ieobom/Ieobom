@@ -58,7 +58,7 @@ def seed_curriculum(db: Session, graph: dict) -> uuid.UUID:
     db.flush()
 
     edges = {
-        (course_ids[edge["from_course_id"]], course_ids[edge["to_course_id"]])
+        (course_ids[edge["from_course_id"]], course_ids[edge["to_course_id"]]): edge
         for edge in graph["edges"]
     }
     curriculum_course_ids = select(Course.id).where(Course.curriculum_id == curriculum.id)
@@ -69,18 +69,21 @@ def seed_curriculum(db: Session, graph: dict) -> uuid.UUID:
         )
     ).all()
     for relation in existing:
-        key = (relation.source_course_id, relation.target_course_id)
-        if key in edges:
-            edges.remove(key)
-        else:
+        edge = edges.pop((relation.source_course_id, relation.target_course_id), None)
+        if edge is None:
             db.delete(relation)
-    for source_id, target_id in sorted(edges):
+            continue
+        relation.reason = edge["reason"]
+        relation.confidence = edge["confidence"]
+    for (source_id, target_id), edge in sorted(edges.items()):
         db.add(CourseRelation(
             id=uuid.uuid5(curriculum.id, f"{RELATION_SOURCE}:{source_id}:{target_id}"),
             source_course_id=source_id,
             target_course_id=target_id,
             relation_type=RELATION_TYPE,
             source=RELATION_SOURCE,
+            reason=edge["reason"],
+            confidence=edge["confidence"],
         ))
     return curriculum.id
 

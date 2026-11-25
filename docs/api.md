@@ -114,6 +114,8 @@ type CurriculumMapResponse = {
     target_course_id: UUID;
     relation_type: string;
     source: string;
+    reason: string | null;
+    confidence: string | null;
   }[];
 };
 ```
@@ -130,6 +132,8 @@ type CurriculumMapResponse = {
 하나의 커리큘럼 상세와 지도는 `/map`으로 받는다. 별도 `GET /curricula/{id}`는 없다.
 지도에는 미수강 과목도 포함하므로 `enrollment_status`로 흑백·수강 중·완료 표시를 나눈다.
 관계는 `source_course_id`에서 `target_course_id`로 연결한다. 화면 배치 좌표는 응답에 없다.
+`reason`은 왜 그 순서로 이어지는지 적은 한두 문장이고 `confidence`는 `high`·`medium`·`low`다.
+숭실대 2026 교육과정 연결은 전부 잠정 추천이라 공식 선수과목이 아니며, 근거가 없는 연결은 둘 다 `null`이다.
 학년·학기·영역으로 거르는 쿼리는 두지 않는다. 연결의 절반 이상이 서로 다른 영역을 이어서 서버에서 거르면
 관계가 잘린다. 과목과 관계를 모두 받아 화면에서 거른다.
 관계가 없으면 `relations=[]`다. `source=ssu_2026_provisional`은 숭실대 AI소프트웨어학부 2026학년도
