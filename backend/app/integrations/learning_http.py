@@ -4,9 +4,10 @@ from urllib.request import Request, urlopen
 
 
 class ProviderError(RuntimeError):
-    def __init__(self, message: str, *, retryable: bool = True):
+    def __init__(self, message: str, *, retryable: bool = True, http_status: int | None = None):
         super().__init__(message)
         self.retryable = retryable
+        self.http_status = http_status
 
 
 def request_json(url, *, provider, headers, timeout, payload=None):
@@ -29,7 +30,7 @@ def request_json(url, *, provider, headers, timeout, payload=None):
         if isinstance(detail, str):
             message += f": {detail[:500]}"
         raise ProviderError(
-            message, retryable=status in (408, 429) or status >= 500
+            message, retryable=status in (408, 429) or status >= 500, http_status=status,
         ) from None
     except TimeoutError:
         raise ProviderError(f"{provider} timed out after {timeout}s") from None

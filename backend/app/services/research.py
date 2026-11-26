@@ -1,6 +1,9 @@
+import json
 import re
 import time
+from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
+from uuid import uuid4
 
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -33,15 +36,44 @@ def _normalize_query(query: str) -> str:
     return re.sub(r"\s+", " ", query.strip().casefold())
 
 
-def _search(query: str, year: int) -> list[dict]:
+def _log_search(event: str, tags: dict, **fields) -> None:
+    print(json.dumps({
+        **tags, **fields, "event": event, "timestamp": datetime.now(timezone.utc).isoformat(),
+    }, ensure_ascii=False), flush=True)
+
+
+def _search(query: str, year: int, *, tags: dict) -> list[dict]:
+    tags = {**tags, "query": query, "request_query": query[:200], "search_id": str(uuid4())}
+    search_started = time.monotonic()
     # 키 없이는 공용 한도, 키가 있어도 초당 1회 한도라 429가 잦다. 간격을 늘려 가며 세 번 더 시도한다.
-    for delay in (5, 15, 30, None):
+    for request_attempt, delay in enumerate((5, 15, 30, None), 1):
+        request_tags = {**tags, "request_attempt": request_attempt}
+        _log_search("semantic_scholar_request_started", request_tags)
+        started = time.monotonic()
         try:
-            return search_recent_papers(query, year)
+            papers = search_recent_papers(query, year)
         except ProviderError as error:
-            if not error.retryable or delay is None:
+            will_retry = error.retryable and delay is not None
+            finished = time.monotonic()
+            _log_search(
+                "semantic_scholar_request_finished", request_tags, status="error",
+                elapsed_ms=round((finished - started) * 1000),
+                search_elapsed_ms=round((finished - search_started) * 1000),
+                http_status=error.http_status, error=str(error), retryable=error.retryable,
+                will_retry=will_retry, retry_delay_sec=delay if will_retry else 0,
+            )
+            if not will_retry:
                 raise
             time.sleep(delay)
+            continue
+        finished = time.monotonic()
+        _log_search(
+            "semantic_scholar_request_finished", request_tags, status="success",
+            elapsed_ms=round((finished - started) * 1000),
+            search_elapsed_ms=round((finished - search_started) * 1000),
+            paper_count=len(papers), will_retry=False, retry_delay_sec=0,
+        )
+        return papers
 
 
 def _plan_searches(gemini: Gemini, course: Course, drafts: list[PageDraft]) -> dict[str, set[tuple[int, int]]]:
@@ -128,31 +160,62 @@ def _summarize(gemini: Gemini, papers: dict[str, dict], now: datetime) -> dict[s
 
 def question_trends(
     db: Session, gemini: Gemini, course: Course, drafts: list[PageDraft],
+    *, checkpoint: dict | None = None, on_checkpoint: Callable[[dict], None] | None = None,
+    log_tags: dict | None = None,
 ) -> tuple[dict[tuple[int, int], list[ResearchTrend]], dict[int, str]]:
     active = [draft for draft in drafts if draft.analysis.question_eligible and draft.questions]
     if not active:
         return {}, {draft.page_number: "ready" for draft in drafts}
 
-    assignments = _plan_searches(gemini, course, active)
+    tags = {
+        **(log_tags or {}), "course_id": str(course.id),
+        "page_numbers": sorted(draft.page_number for draft in drafts),
+    }
+    checkpoint = checkpoint if checkpoint is not None else {}
+    if "searches" not in checkpoint:
+        assignments = _plan_searches(gemini, course, active)
+        checkpoint["searches"] = [
+            {"query": query, "questions": sorted(questions)} for query, questions in assignments.items()
+        ]
+        if on_checkpoint is not None:
+            on_checkpoint(checkpoint)
+    assignments = {
+        item["query"]: {tuple(question) for question in item["questions"]}
+        for item in checkpoint["searches"]
+    }
     now = datetime.now(timezone.utc)
     query_results: dict[str, list[ResearchTrend]] = {}
     missing: list[str] = []
+    saved_searches = checkpoint.setdefault("search_results", {})
     for query in assignments:
         cache = db.get(ResearchQueryCache, (course.id, query))
         if cache is not None and now - cache.searched_at < QUERY_CACHE_TTL:
             query_results[query] = [ResearchTrend.model_validate(paper) for paper in cache.papers]
+            _log_search("semantic_scholar_cache", tags, query=query, status="hit", source="query_cache")
         else:
             missing.append(query)
+            _log_search(
+                "semantic_scholar_cache", tags, query=query, status="miss",
+                source="checkpoint" if query in saved_searches else "api",
+            )
 
     raw_by_query: dict[str, list[dict]] = {}
     failures: dict[str, ProviderError] = {}
     for index, query in enumerate(missing):
+        if query in saved_searches:
+            raw_by_query[query] = saved_searches[query]
+            continue
         if index:
             time.sleep(1.1)
         try:
-            raw_by_query[query] = _search(query, now.year)[:PAPERS_PER_QUERY]
+            raw_by_query[query] = _search(query, now.year, tags=tags)[:PAPERS_PER_QUERY]
         except ProviderError as error:
             failures[query] = error
+            continue
+        # 요약이나 다른 검색이 실패해도 성공한 외부 검색까지 반복하지 않는다.
+        saved_searches[query] = raw_by_query[query]
+        if on_checkpoint is not None:
+            on_checkpoint(checkpoint)
 
     raw_papers = {
         paper["paper_id"]: paper

@@ -222,7 +222,10 @@ def retry_analysis(
     learning = db.get(DocumentLearning, document_id)
     job.status = "pending"
     job.stage = "queued"
-    job.attempt = 0
+    job.consecutive_failures = 0
+    job.first_failure_at = None
+    if learning is not None:
+        job.attempt += 1
     job.completed_pages = len(learning.result["pages"]) if learning is not None and learning.result is not None else 0
     job.total_pages = document.page_count
     job.error_code = None
@@ -530,13 +533,9 @@ def ask_about_page(
     document = _get_owned_document(db, document_id, current_user)
     _check_page_number(document, page_number)
     learning = db.get(DocumentLearning, document_id)
-    if learning is None or learning.result is None:
-        raise HTTPException(status_code=409, detail="page analysis not completed yet")
-    result = learning.result["pages"].get(str(page_number))
-    if result is None:
-        raise HTTPException(status_code=409, detail="page analysis not completed yet")
-    if not result["analysis"]["question_eligible"]:
-        raise HTTPException(status_code=409, detail="page has no eligible lecture content")
+    if learning is None:
+        raise HTTPException(status_code=409, detail="page extraction not completed yet")
+    # 챗은 추출된 본문만 쓴다. 탐구 질문 생성과 제외 페이지 판정을 기다리지 않는다.
     page = next(page for page in learning.extraction["pages"] if page["page_number"] == page_number)
     page_id = db.query(DocumentPage.id).filter_by(document_id=document_id, page_number=page_number).scalar()
     if page_id is None:
