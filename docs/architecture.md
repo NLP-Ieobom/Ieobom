@@ -70,7 +70,8 @@ Gemini 설정이 없으면 추출만 저장하고 `succeeded/analysis_skipped`�
 | 사용자별 페이지 채팅 질문·답변·응답 유형·근거 ID | `page_chat` |
 | 마지막 페이지·서로 다른 열람 페이지 | `user_document_progress`, `user_page_view` |
 | 과목 검색용 주제·편성 학기·1536차원 임베딩 | `course_learning_profile` |
-| 과목 단위 연구 동향 캐시 | `course_research_cache` |
+| 질문 검색어별 연구 동향 캐시 | `research_query_cache` |
+| 이전 버전의 과목 단위 연구 동향 캐시 | `course_research_cache` |
 | 처리 단계·진행률·실패·실행 잠금 | `analysis_job` |
 
 `document_learning.result`와 `question`은 같은 질문 UUID를 사용한다. 질문 저장 여부와 추천 과목의
@@ -87,10 +88,11 @@ Gemini 설정이 없으면 추출만 저장하고 `succeeded/analysis_skipped`�
 별도 표시한다. 추천 결과는 공식 선수과목 관계가 아니다. 커리큘럼 지도는 `course_relation`에 등록된
 관계를 보여 주며 질문별 추천과 구분한다.
 
-연구 동향은 `course.is_trend_enabled`가 켜진 과목만 생성한다. Semantic Scholar 검색 결과를
-Gemini가 요약하고 과목별로 30일간 재사용한다. 검색이 실패하고 후보도 없으면 Gemini의 연구 방향
-안내로 대체할 수 있으며 `source=gemini`, `year=null`로 구분한다. 대체 안내는 논문 검색 캐시에 넣지 않는다.
-동향 생성 자체가 실패하면 `research_status=unavailable`로 두고 질문 생성은 계속한다.
+연구 동향은 `course.is_trend_enabled`가 켜진 과목만 생성한다. 같은 페이지의 두 질문이 같은 연구 주제면
+검색어 하나로 묶고, 주제가 다를 때만 각각 영어 검색어를 만든다. Semantic Scholar 검색 결과는 Gemini가
+초록에 근거해 요약하고 `과목 + 정규화된 검색어`별로 30일간 재사용한다. 각 질문에는 자신이 속한
+검색어의 후보만 전달하며, 직접 관련된 후보가 없으면 빈 목록을 저장한다. 검색이 실패하면
+`research_status=unavailable`로 두고 질문 생성은 계속한다.
 
 ## 실패와 복구
 

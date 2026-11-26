@@ -9,11 +9,11 @@ from pydantic import ValidationError
 
 from app.integrations.learning_http import ProviderError
 from app.pipelines.docling_output import _pages
-from app.models.learning import CourseLearningProfile, CourseResearchCache
+from app.models.learning import CourseLearningProfile, ResearchQueryCache
 from app.pipelines.learning import answer_follow_up, generate_learning
 from app.schemas.learning import (
-    AskRequest, ChatExchange, FollowUpAnswer, PageDrafts, PageSelections, PaperSummaries, ResearchDirections,
-    ResearchQueries,
+    AskRequest, ChatExchange, FollowUpAnswer, PageDrafts, PageSelections, PaperSummaries,
+    ResearchSearchPlan,
 )
 
 
@@ -42,6 +42,13 @@ def make_selection(courses=(), papers=()):
             for course_id in courses
         ], "paper_ids": list(papers)},
         {"question_number": 2, "related_courses": [], "paper_ids": []},
+    ]}]})
+
+
+def make_search_plan(*groups):
+    return ResearchSearchPlan.model_validate({"pages": [{"page_number": 2, "searches": [
+        {"question_numbers": question_numbers, "query": query}
+        for question_numbers, query in groups
     ]}]})
 
 
@@ -176,12 +183,13 @@ class LearningContractTest(TestCase):
         self.set_questions([make_question("조인 비용은?"), make_question("어떤 이상이 줄어드나요?")])
         draft = self.gemini.generate.return_value
         paper_id = "a" * 40
-        selection = make_selection(papers=["r1"])
+        plan = make_search_plan(([1, 2], "database normalization join cost"))
+        selection = make_selection(papers=["p2-q1-r1"])
         self.gemini.generate.side_effect = [
-            ResearchQueries(queries=["database normalization"]),
+            draft, plan,
             PaperSummaries(papers=[{"paper_id": paper_id, "summary": "정규화의 비용을 비교합니다."}]),
-            draft, selection,
-            draft, selection,
+            selection,
+            draft, plan, selection,
         ]
         now = datetime.now(timezone.utc)
         with patch("app.integrations.semantic_scholar.request_json", return_value={"data": [
@@ -199,9 +207,9 @@ class LearningContractTest(TestCase):
             self.assertEqual(page["questions"][1]["trends"], [])
             self.db.commit.assert_called_once()
 
-            def get_cached(model, course_id):
-                self.assertEqual(course_id, self.course.id)
-                if model is CourseResearchCache:
+            def get_cached(model, key):
+                if model is ResearchQueryCache:
+                    self.assertEqual(key, (self.course.id, "database normalization join cost"))
                     return SimpleNamespace(searched_at=now, papers=trends)
                 self.assertIs(model, CourseLearningProfile)
                 return None
@@ -212,16 +220,47 @@ class LearningContractTest(TestCase):
             search.assert_called_once()
             self.db.commit.assert_called_once()
 
-    def test_research_merges_queries_and_keeps_results_when_one_search_fails(self):
+    def test_research_groups_similar_questions_and_reuses_one_search(self):
+        self.course.is_trend_enabled = True
+        self.set_questions([make_question("조인 비용은?"), make_question("정규화의 비용은?")])
+        draft = self.gemini.generate.return_value
+        paper_id = "a" * 40
+        now = datetime.now(timezone.utc)
+        self.gemini.generate.side_effect = [
+            draft,
+            make_search_plan(([1, 2], "database normalization join cost")),
+            PaperSummaries(papers=[{"paper_id": paper_id, "summary": "정규화 비용을 비교합니다."}]),
+            PageSelections.model_validate({"pages": [{"page_number": 2, "questions": [
+                {"question_number": 1, "related_courses": [], "paper_ids": ["p2-q1-r1"]},
+                {"question_number": 2, "related_courses": [], "paper_ids": ["p2-q2-r1"]},
+            ]}]}),
+        ]
+        hit = {"data": [{"paperId": paper_id, "title": "Normalization costs",
+                          "abstract": "We compare schemas.", "year": now.year}]}
+        with patch("app.integrations.semantic_scholar.request_json", return_value=hit) as search:
+            page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
+        search.assert_called_once()
+        self.assertEqual(
+            [question["trends"][0]["paper_id"] for question in page["questions"]],
+            [paper_id, paper_id],
+        )
+        selection_request = self.gemini.generate.call_args.args[1]["pages"][0]["questions"]
+        self.assertEqual(
+            [[paper["paper_id"] for paper in question["paper_candidates"]] for question in selection_request],
+            [["p2-q1-r1"], ["p2-q2-r1"]],
+        )
+
+    def test_research_keeps_partial_results_when_one_question_search_fails(self):
         self.course.is_trend_enabled = True
         self.set_questions([make_question("조인 비용은?"), make_question("어떤 이상이 줄어드나요?")])
         draft = self.gemini.generate.return_value
         paper_id = "a" * 40
         now = datetime.now(timezone.utc)
         self.gemini.generate.side_effect = [
-            ResearchQueries(queries=["database normalization", "query optimization"]),
+            draft,
+            make_search_plan(([1], "database normalization"), ([2], "update anomaly evaluation")),
             PaperSummaries(papers=[{"paper_id": paper_id, "summary": "정규화의 비용을 비교합니다."}]),
-            draft, make_selection(papers=["r1"]),
+            make_selection(papers=["p2-q1-r1"]),
         ]
         hit = {"data": [{"paperId": paper_id, "title": "Normalization costs", "abstract": "We compare schemas.",
                          "year": now.year}]}
@@ -232,24 +271,18 @@ class LearningContractTest(TestCase):
             redirect_stdout(StringIO()),
         ):
             page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
-        # 두 번째 검색어는 네 번 모두 429지만 첫 검색어의 논문으로 계속한다
+        # 두 번째 질문의 검색어는 네 번 모두 429지만 첫 질문의 논문으로 계속한다
         self.assertEqual(search.call_count, 5)
         self.assertEqual(page["questions"][0]["trends"][0]["paper_id"], paper_id)
         self.assertEqual(page["questions"][0]["trends"][0]["source"], "semantic_scholar")
         self.db.commit.assert_called_once()
 
-    def test_search_failure_falls_back_to_uncached_gemini_directions(self):
+    def test_total_search_failure_marks_research_unavailable_without_fake_papers(self):
         self.course.is_trend_enabled = True
         self.set_questions([make_question("조인 비용은?"), make_question("어떤 이상이 줄어드나요?")])
         draft = self.gemini.generate.return_value
-        selection = make_selection(papers=["r1"])
         self.gemini.generate.side_effect = [
-            ResearchQueries(queries=["database normalization"]),
-            ResearchDirections(directions=[{
-                "title": "정규화와 조회 성능의 균형", "summary": "분해 이후의 조인 비용을 다룹니다.",
-                "search_query": "denormalization query performance",
-            }]),
-            draft, selection,
+            draft, make_search_plan(([1, 2], "database normalization")),
         ]
         with (
             patch("app.integrations.semantic_scholar.request_json", side_effect=ProviderError("test 429")) as search,
@@ -258,27 +291,19 @@ class LearningContractTest(TestCase):
         ):
             page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
         self.assertEqual(search.call_count, 4)
-        self.assertEqual(page["research_status"], "ready")
-        trend = page["questions"][0]["trends"][0]
-        self.assertEqual((trend["source"], trend["year"]), ("gemini", None))
-        self.assertTrue(trend["url"].startswith("https://scholar.google.com/scholar?q=denormalization"))
-        self.db.execute.assert_not_called()
+        self.assertEqual(page["research_status"], "unavailable")
+        self.assertEqual([question["trends"] for question in page["questions"]], [[], []])
         self.db.commit.assert_not_called()
 
-    def test_research_failure_keeps_questions_available(self):
+    def test_invalid_research_plan_keeps_questions_available(self):
         self.course.is_trend_enabled = True
         self.set_questions([make_question("조인 비용은?"), make_question("어떤 이상이 줄어드나요?")])
+        draft = self.gemini.generate.return_value
         self.gemini.generate.side_effect = [
-            ResearchQueries(queries=["database normalization"]), ProviderError("test 503"),
-            self.gemini.generate.return_value,
+            draft, *[make_search_plan(([1], "database normalization"))] * 3,
         ]
-        with patch(
-            "app.integrations.semantic_scholar.request_json",
-            side_effect=ProviderError("test 403", retryable=False),
-        ) as search:
-            with redirect_stdout(StringIO()):
-                page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
-        search.assert_called_once()
+        with redirect_stdout(StringIO()):
+            page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
         self.assertEqual(page["research_status"], "unavailable")
         self.assertEqual([question["trends"] for question in page["questions"]], [[], []])
 

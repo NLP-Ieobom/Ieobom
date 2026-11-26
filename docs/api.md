@@ -390,8 +390,8 @@ UUID와 저장 표시는 예시 값이다. 실제 화면은 각 요청에서 받
 추천 과목의 `previous`·`next`는 교육과정의 편성 학기 기준이다. 실제 수강 여부는 `enrollment_status`를 쓴다.
 후보 데이터나 관련 결과가 없으면 `related_courses=[]`가 정상이며 공식 선수 관계로 표시하지 않는다.
 `research_status=disabled`는 과목 설정 꺼짐, `unavailable`은 동향 생성 실패다.
-`ready`여도 질문에 맞는 결과가 없으면 `trends=[]`일 수 있다. `source=gemini`는 논문 자체가 아닌
-연구 방향 안내와 검색 링크이며 연도는 `null`이다.
+`ready`여도 질문에 맞는 결과가 없으면 `trends=[]`일 수 있다. 새 분석의 논문은
+`source=semantic_scholar`다. 이전 버전에 저장된 `source=gemini`, `year=null` 연구 방향도 조회될 수 있다.
 
 ### 원문 물음표 위치
 

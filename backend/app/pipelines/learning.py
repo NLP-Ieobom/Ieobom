@@ -22,10 +22,9 @@ from app.schemas.learning import (
     PageLearning,
     PageSelections,
     QuestionLearning,
-    ResearchTrend,
 )
 from app.services.curriculum_search import find_candidates
-from app.services.research import course_trends
+from app.services.research import question_trends
 
 BATCH_SIZE = 3
 OUTPUT_ATTEMPTS = 3
@@ -69,7 +68,7 @@ next인 과목(이 과목보다 뒤 학기에 들을 과목)을 각각 최대 �
 어떻게 이어지는지 두세 문장으로 쓰세요. next_topic에는 previous 과목이면 이 질문을 이해하려고 다시 볼
 주제를, next 과목이면 이어서 배울 주제를 쓰고, 그 주제에서 확인할 점을 한두 문장으로 덧붙이세요.
 선수과목이나 공식 관계라고 단정하지 마세요.
-논문은 paper_candidates 중 그 질문과 직접 관련되는 것만 최대 두 개 고르세요.
+논문은 각 질문 안의 paper_candidates 중 그 질문과 직접 관련되는 것만 최대 두 개 고르세요.
 관련 후보가 없으면 해당 목록을 비워 두세요. 새 ID를 만들지 마세요.
 course_candidates가 빈 쪽의 related_courses는 반드시 빈 배열입니다. 후보에 없는 과목 이름이나 코드를
 지어내면 잘못된 결과입니다.
@@ -184,17 +183,17 @@ def _generate_checked(gemini, instructions, data, schema, check, call):
             print(f"Regenerating {schema.__name__} after invalid output: {error}", flush=True)
 
 
-def _get_research(db, gemini, course) -> tuple[list[ResearchTrend], str]:
+def _get_research(db, gemini, course, drafts):
     if not course.is_trend_enabled:
-        return [], "disabled"
+        return {}, {draft.page_number: "disabled" for draft in drafts}
     try:
-        return course_trends(db, gemini, course), "ready"
+        return question_trends(db, gemini, course, drafts)
     except ProviderError as error:
-        print(f"Course research unavailable for {course.id}: {error}", flush=True)
-        return [], "unavailable"
+        print(f"Question research unavailable for {course.id}: {error}", flush=True)
+        return {}, {draft.page_number: "unavailable" for draft in drafts}
 
 
-def _select_links(db, gemini, course, drafts, papers, has_profiles, semester_order, search):
+def _select_links(db, gemini, course, drafts, papers_by_question, has_profiles, semester_order, search):
     active = [draft for draft in drafts if draft.analysis.question_eligible]
     candidates = {}
     if active and has_profiles:
@@ -218,7 +217,7 @@ def _select_links(db, gemini, course, drafts, papers, has_profiles, semester_ord
                     relation=relation, semester_order=semester_order, limit=3,
                 )
             ]
-    if not active or (not any(candidates.values()) and not papers):
+    if not active or (not any(candidates.values()) and not any(papers_by_question.values())):
         return {}
 
     # 모델이 긴 UUID나 논문 ID를 옮겨 적다 틀리지 않도록 짧은 별칭을 보여 주고, 응답에서 원래 ID로 되돌린다.
@@ -227,7 +226,13 @@ def _select_links(db, gemini, course, drafts, papers, has_profiles, semester_ord
         number: {f"p{number}-c{index}": item for index, item in enumerate(items, 1)}
         for number, items in candidates.items()
     }
-    paper_aliases = {f"r{index}": paper for index, paper in enumerate(papers, 1)}
+    paper_aliases = {
+        key: {
+            f"p{key[0]}-q{key[1]}-r{index}": paper
+            for index, paper in enumerate(papers, 1)
+        }
+        for key, papers in papers_by_question.items()
+    }
 
     question_counts = {draft.page_number: len(draft.questions) for draft in active}
 
@@ -252,15 +257,16 @@ def _select_links(db, gemini, course, drafts, papers, has_profiles, semester_ord
                 raise ProviderError(f"Missing question selections on page {number}")
             course_map = course_aliases.get(number, {})
             for item in selection.questions:
+                paper_map = paper_aliases.get((number, item.question_number), {})
                 _validate_references([choice.course_id for choice in item.related_courses], set(course_map), "course")
-                _validate_references(item.paper_ids, set(paper_aliases), "paper")
+                _validate_references(item.paper_ids, set(paper_map), "paper")
                 links[number, item.question_number] = (
                     [CourseLink(
                         **{**choice.model_dump(), "course_id": course_map[choice.course_id]["course_id"]},
                         name=course_map[choice.course_id]["name"],
                         relation=course_map[choice.course_id]["relation"],
                     ) for choice in item.related_courses],
-                    [paper_aliases[alias] for alias in item.paper_ids],
+                    [paper_map[alias] for alias in item.paper_ids],
                 )
         return links
 
@@ -269,16 +275,21 @@ def _select_links(db, gemini, course, drafts, papers, has_profiles, semester_ord
             "page_number": draft.page_number,
             "analysis": draft.analysis.model_dump(),
             "questions": [
-                {"question_number": index, "question": question.question, "headline": question.explanation.headline}
+                {
+                    "question_number": index,
+                    "question": question.question,
+                    "headline": question.explanation.headline,
+                    "paper_candidates": [
+                        {"paper_id": alias, "title": paper.title, "summary": paper.summary}
+                        for alias, paper in paper_aliases.get((draft.page_number, index), {}).items()
+                    ],
+                }
                 for index, question in enumerate(draft.questions, 1)
             ],
             "course_candidates": [
                 {**item, "course_id": alias} for alias, item in course_aliases.get(draft.page_number, {}).items()
             ],
         } for draft in active],
-        "paper_candidates": [{
-            "paper_id": alias, "title": paper.title, "summary": paper.summary,
-        } for alias, paper in paper_aliases.items()],
     }, PageSelections, check, "SELECT_LINKS")
 
 
@@ -316,7 +327,6 @@ def generate_learning(
         CourseLearningProfile.embedding_model == gemini.embedding_model,
         Course.curriculum_id == course.curriculum_id,
     ).limit(1)) is not None
-    papers, research_status = _get_research(db, gemini, course)
     profile = db.get(CourseLearningProfile, course.id)
     course_context = {"name": course.name, "topics": profile.topics if profile is not None else []}
     semester_order = profile.semester_order if profile is not None else None
@@ -373,8 +383,12 @@ def generate_learning(
             number = page["page_number"]
             _check_page(drafts[number], page, evidence[number], existing_analyses.get(number))
 
+        papers_by_question, research_statuses = _get_research(
+            db, gemini, course, list(drafts.values()),
+        )
         links = _select_links(
-            db, gemini, course, list(drafts.values()), papers, has_profiles, semester_order, search,
+            db, gemini, course, list(drafts.values()), papers_by_question,
+            has_profiles, semester_order, search,
         )
         completed = []
         for page in batch:
@@ -391,7 +405,7 @@ def generate_learning(
                     EvidenceBlock(block_id=block["block_id"], bbox=block["bbox"])
                     for block in page["blocks"]
                 ],
-                research_status=research_status,
+                research_status=research_statuses[number],
             )
             completed.append(result.model_dump(mode="json"))
         if on_batch is not None:

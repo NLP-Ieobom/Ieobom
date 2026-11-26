@@ -104,8 +104,19 @@ class PageSelections(StructuredOutput):
     pages: list[PageSelection]
 
 
-class ResearchQueries(StructuredOutput):
-    queries: list[Text] = Field(min_length=1, max_length=3)
+class ResearchSearch(StructuredOutput):
+    # 같은 쪽의 비슷한 질문은 한 검색으로 묶고, 서로 다른 질문만 별도 검색한다.
+    question_numbers: list[int] = Field(min_length=1, max_length=2)
+    query: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+
+
+class PageResearchSearches(StructuredOutput):
+    page_number: int
+    searches: list[ResearchSearch] = Field(min_length=1, max_length=2)
+
+
+class ResearchSearchPlan(StructuredOutput):
+    pages: list[PageResearchSearches]
 
 
 class PaperSummary(StructuredOutput):

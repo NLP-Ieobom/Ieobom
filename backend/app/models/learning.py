@@ -43,3 +43,14 @@ class CourseResearchCache(Base):
     )
     searched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     papers: Mapped[list[dict]] = mapped_column(JSONB)
+
+
+class ResearchQueryCache(Base):
+    __tablename__ = "research_query_cache"
+
+    course_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(), ForeignKey("course.id", ondelete="CASCADE"), primary_key=True
+    )
+    query: Mapped[str] = mapped_column(String(200), primary_key=True)
+    searched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    papers: Mapped[list[dict]] = mapped_column(JSONB)
