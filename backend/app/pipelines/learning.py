@@ -3,6 +3,7 @@
 import re
 import unicodedata
 from collections.abc import Callable, Hashable, Sequence
+from copy import deepcopy
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -183,10 +184,12 @@ def _generate_checked(gemini, instructions, data, schema, check, call):
             print(f"Regenerating {schema.__name__} after invalid output: {error}", flush=True)
 
 
-def _get_research(db, gemini, course, drafts):
+def _get_research(db, gemini, course, drafts, checkpoint, on_checkpoint, log_tags):
     if not course.is_trend_enabled:
         return {}, {draft.page_number: "disabled" for draft in drafts}
-    return question_trends(db, gemini, course, drafts)
+    return question_trends(
+        db, gemini, course, drafts, checkpoint=checkpoint, on_checkpoint=on_checkpoint, log_tags=log_tags,
+    )
 
 
 def _select_links(db, gemini, course, drafts, papers_by_question, has_profiles, semester_order, search):
@@ -294,6 +297,9 @@ def generate_learning(
     saved_pages: dict[str, dict] | None = None,
     on_batch: Callable[[list[dict]], None] | None = None,
     single_batch: bool = False,
+    pending_batch: dict | None = None,
+    on_checkpoint: Callable[[dict], None] | None = None,
+    log_tags: dict | None = None,
 ) -> dict:
     """Turn team extraction v1 JSON into the learning JSON stored per document.
 
@@ -327,11 +333,14 @@ def generate_learning(
     profile = db.get(CourseLearningProfile, course.id)
     course_context = {"name": course.name, "topics": profile.topics if profile is not None else []}
     semester_order = profile.semester_order if profile is not None else None
+    checkpoint = deepcopy(pending_batch) if pending_batch is not None else {}
     for offset in range(0, len(pages), BATCH_SIZE):
         batch = [page for page in pages[offset:offset + BATCH_SIZE] if str(page["page_number"]) not in results]
         if not batch:
             continue
-        drafts = {}
+        drafts = {item["page_number"]: PageDraft.model_validate(item) for item in checkpoint.get("drafts", [])}
+        if drafts and set(drafts) != {page["page_number"] for page in batch}:
+            raise ValueError("Saved draft pages do not match the next unfinished batch")
         prompt = []
         evidence = {}
         existing_analyses = {}
@@ -342,6 +351,8 @@ def generate_learning(
             existing = PageAnalysis.model_validate(page["analysis"]) if "analysis" in page else None
             if existing is not None:
                 existing_analyses[number] = existing
+            if number in drafts:
+                continue
             if existing is not None and not existing.question_eligible:
                 drafts[number] = PageDraft(page_number=number, analysis=existing, questions=[])
                 continue
@@ -380,8 +391,12 @@ def generate_learning(
             number = page["page_number"]
             _check_page(drafts[number], page, evidence[number], existing_analyses.get(number))
 
+        if "drafts" not in checkpoint:
+            checkpoint["drafts"] = [drafts[page["page_number"]].model_dump(mode="json") for page in batch]
+            if on_checkpoint is not None:
+                on_checkpoint(checkpoint)
         papers_by_question, research_statuses = _get_research(
-            db, gemini, course, list(drafts.values()),
+            db, gemini, course, list(drafts.values()), checkpoint, on_checkpoint, log_tags,
         )
         links = _select_links(
             db, gemini, course, list(drafts.values()), papers_by_question,
@@ -408,6 +423,7 @@ def generate_learning(
         if on_batch is not None:
             on_batch(completed)
         results.update({str(page["page_number"]): page for page in completed})
+        checkpoint = {}
         if single_batch:
             break
     return {"schema_version": "1.0", "pages": results}

@@ -18,6 +18,7 @@ class DocumentLearning(Base):
     )
     extraction: Mapped[dict] = mapped_column(JSONB)
     result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    pending_batch: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
 class CourseLearningProfile(Base):

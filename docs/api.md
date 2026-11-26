@@ -263,12 +263,15 @@ type StatusResponse = {
 12/27페이지가 완료됐다면 앞 12페이지의 질문을 먼저 조회할 수 있다. `100%`만 보고 잡 완료로 판단하지 않는다.
 
 오류 코드는 `AI_NOT_CONFIGURED`, `PDF_DOWNLOAD_FAILED`, `EXTRACTION_FAILED`, `EXTRACTION_TIMEOUT`,
-`AI_TEMPORARY_ERROR`, `AI_REQUEST_FAILED`, `ANALYSIS_FAILED`, `WORKER_INTERRUPTED`를 사용한다.
+`AI_TEMPORARY_ERROR`, `AI_RETRY_EXHAUSTED`, `AI_REQUEST_FAILED`, `ANALYSIS_FAILED`, `WORKER_INTERRUPTED`를 사용한다.
+`AI_RETRY_EXHAUSTED`는 같은 묶음의 첫 실패부터 1시간이 지나 자동 재시도를 멈춘 상태다.
 자동 재시도 대기에서는 오류 정보가 남아 있어도 계속 폴링한다. 재시도 가능 여부는 코드명이 아닌 `can_retry`를 따른다.
 
 수동 재시도는 실패 또는 분석 생략 상태에서 가능하다. `202`를 받으면 폴링을 다시 시작한다.
-같은 잡의 `attempt`가 0으로 초기화되고, 저장된 추출·완료 페이지·질문 UUID·저장 표시·메모·진도는 유지한다.
+연속 실패 횟수와 1시간 제한은 초기화하고 `attempt`는 누적 유지한다. 저장된 추출·미공개 질문 초안·
+완료 페이지·질문 UUID·저장 표시·메모·진도는 유지한다.
 미완료 묶음부터 이어서 처리한다. 완료된 질문을 다시 만드는 API는 아니다.
+임시 저장한 질문 초안은 조회 API에 노출하지 않고, 논문 연결까지 완료된 묶음만 공개한다.
 
 ## 페이지 분석과 질문
 
@@ -468,11 +471,12 @@ type DocumentProgressResponse = DocumentReadingProgress & {
 
 ## 추가 질문과 상태 확인
 
-`/ask`는 분석이 끝난 현재 페이지에 대해 질문하고 앞 대화를 이어 갈 수 있는 API다.
+`/ask`는 추출이 끝난 현재 페이지에 대해 질문하고 앞 대화를 이어 갈 수 있는 API다.
+질문 생성이 끝나기 전에도, 질문이 만들어지지 않는 표지·목차 쪽에서도 쓸 수 있다.
 
 | API | 입력 | 성공 | 추가 오류 |
 | --- | --- | --- | --- |
-| `POST /documents/{document_id}/pages/{page_number}/ask` | `{question: string}` | `200 StoredChatExchange` | `404` 문서·페이지 없음, `409` 업로드·추출·페이지 분석 미완료 또는 제외 페이지, `422` 페이지 범위·질문 길이 오류, `503` 설정 없음·DB 저장 실패, `502` 생성 실패 |
+| `POST /documents/{document_id}/pages/{page_number}/ask` | `{question: string}` | `200 StoredChatExchange` | `404` 문서·페이지 없음, `409` 업로드·추출 미완료, `422` 페이지 범위·질문 길이 오류, `503` 설정 없음·DB 저장 실패, `502` 생성 실패 |
 | `GET /documents/{document_id}/pages/{page_number}/chat` | 쿼리 `limit: 1~50`, 기본 `20` | `200 {document_id: UUID, page_number: number, exchanges: StoredChatExchange[]}` | `409` 업로드·추출 미완료, `422` 페이지 범위·limit 오류 |
 | `GET /health` | 없음. 인증 불필요, `/api/v1` 밖 | `200 {status: "ok"}` | API 프로세스 응답 확인용 |
 
@@ -510,6 +514,7 @@ Gemini 호출·검증이 실패하면 대화 기록을 만들지 않는다.
 `answered`에는 현재 페이지의 근거 블록이 한 개 이상 들어간다. `conversation`은 인사·감사 같은 짧은 대화이고,
 `insufficient_evidence`는 현재 페이지에서 답을 뒷받침할 내용을 찾지 못한 경우다. 두 경우 모두 근거 목록은 비어 있으며
 화면은 `explanation`을 그대로 표시한다. 근거가 있으면 기존 `/learning.evidence_blocks`에서 같은 `block_id`를 찾아 강조한다.
+그 쪽의 질문 생성이 아직 안 끝났으면 `/learning`이 `409`라서 좌표를 찾을 수 없다. 이때는 강조 없이 `explanation`만 보여 준다.
 서버는 해당 페이지의 텍스트·표로 Gemini를 호출한다. `/chat` 조회 자체는 Gemini 호출이나 열람 진도 변경을 하지 않는다.
 `/health` 성공은 DB·S3·워커·Gemini 상태까지 보장하지 않는다.
 

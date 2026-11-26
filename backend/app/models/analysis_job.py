@@ -25,6 +25,8 @@ class AnalysisJob(Base):
     completed_pages: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_pages: Mapped[int | None] = mapped_column(Integer, nullable=True)
     attempt: Mapped[int] = mapped_column(Integer, default=0)
+    consecutive_failures: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    first_failure_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     error_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     error_message: Mapped[str | None] = mapped_column(String(255), nullable=True)
     scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

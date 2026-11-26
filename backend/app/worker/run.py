@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import time
+from copy import deepcopy
 from pathlib import Path
 from threading import Event, Thread
 from uuid import uuid4
@@ -57,14 +58,35 @@ class JobLeaseLost(RuntimeError):
 
 def recover_jobs(db) -> None:
     db.execute(text("""
-        UPDATE analysis_job
-        SET status = CASE WHEN attempt < :max_attempts THEN 'pending' ELSE 'failed' END,
-            stage = CASE WHEN attempt < :max_attempts THEN 'queued' ELSE stage END,
-            scheduled_at = now(), locked_by = NULL, locked_at = NULL,
+        WITH expired AS (
+            SELECT j.id, j.consecutive_failures + 1 AS failures,
+                COALESCE(j.first_failure_at, clock_timestamp()) AS first_failure,
+                CASE WHEN EXISTS (SELECT 1 FROM document_learning l WHERE l.document_id = j.document_id)
+                    THEN COALESCE(j.first_failure_at, clock_timestamp()) > clock_timestamp() - interval '1 hour'
+                    ELSE j.consecutive_failures + 1 < :max_attempts END AS retry
+            FROM analysis_job j
+            WHERE j.status = 'running'
+              AND (j.locked_at IS NULL OR j.locked_at < clock_timestamp() - interval '15 minutes')
+            FOR UPDATE OF j SKIP LOCKED
+        )
+        UPDATE analysis_job j
+        SET status = CASE WHEN expired.retry THEN 'pending' ELSE 'failed' END,
+            stage = CASE WHEN expired.retry THEN 'queued' ELSE j.stage END,
+            consecutive_failures = expired.failures, first_failure_at = expired.first_failure,
+            scheduled_at = LEAST(clock_timestamp() +
+                LEAST(30 * power(2, LEAST(expired.failures - 1, 5)), 600) * interval '1 second',
+                expired.first_failure + interval '1 hour'),
+            locked_by = NULL, locked_at = NULL,
             error_code = 'WORKER_INTERRUPTED', error_message = :message
-        WHERE status = 'running'
-          AND (locked_at IS NULL OR locked_at < clock_timestamp() - interval '15 minutes')
+        FROM expired WHERE j.id = expired.id
     """), {"max_attempts": MAX_ATTEMPTS, "message": "분석 작업이 중단되었습니다. 다시 시도해 주세요."})
+    # 차례를 기다리는 동안에도 제한 시간이 끝나면 새 외부 호출을 시작하지 않는다.
+    db.execute(text("""
+        UPDATE analysis_job SET status = 'failed', error_code = 'AI_RETRY_EXHAUSTED',
+            error_message = :message
+        WHERE status = 'pending' AND first_failure_at <= clock_timestamp() - interval '1 hour'
+          AND EXISTS (SELECT 1 FROM document_learning l WHERE l.document_id = analysis_job.document_id)
+    """), {"message": "같은 페이지 묶음의 재시도 시간이 1시간을 넘어 분석을 일시 중단했습니다. 다시 시도할 수 있습니다."})
     db.commit()
 
 
@@ -104,6 +126,7 @@ def claim_job(db, role: str):
             JOIN document d ON d.id = j.document_id
             JOIN document_learning l ON l.document_id = d.id
             WHERE d.user_id = u.id AND j.status = 'pending' AND j.scheduled_at <= now()
+              AND (j.first_failure_at IS NULL OR j.first_failure_at > clock_timestamp() - interval '1 hour')
         ) AND NOT EXISTS (
             SELECT 1 FROM analysis_job j
             JOIN document d ON d.id = j.document_id
@@ -127,6 +150,7 @@ def claim_job(db, role: str):
         JOIN document d ON d.id = j.document_id
         JOIN document_learning l ON l.document_id = d.id
         WHERE d.user_id = :user_id AND j.status = 'pending' AND j.scheduled_at <= now()
+          AND (j.first_failure_at IS NULL OR j.first_failure_at > clock_timestamp() - interval '1 hour')
         ORDER BY CASE
             WHEN d.id = :preferred THEN CASE WHEN :turns < 2 THEN 0 ELSE 1 END
             ELSE CASE WHEN :turns < 2 THEN 1 ELSE 0 END
@@ -139,7 +163,8 @@ def claim_job(db, role: str):
     row = db.execute(text("""
         UPDATE analysis_job SET status = 'running', stage = 'analyzing',
             locked_by = :worker_id, locked_at = clock_timestamp(), last_served_at = clock_timestamp(),
-            attempt = CASE WHEN attempt = 0 OR error_code IS NOT NULL THEN attempt + 1 ELSE attempt END,
+            attempt = CASE WHEN attempt = 0 OR error_code IS NOT NULL OR first_failure_at IS NOT NULL
+                THEN attempt + 1 ELSE attempt END,
             error_code = NULL, error_message = NULL
         WHERE id = :id RETURNING id, document_id, attempt, locked_by
     """), {"worker_id": owner, "id": picked.id}).first()
@@ -276,6 +301,9 @@ def process(db, job, role: str) -> None:
             for page in extraction["pages"]
         ]).on_conflict_do_nothing(index_elements=[DocumentPage.document_id, DocumentPage.page_number]))
         document.page_count = len(extraction["pages"])
+        db.execute(text("""
+            UPDATE analysis_job SET consecutive_failures = 0, first_failure_at = NULL WHERE id = :id
+        """), {"id": job.id})
         set_job_stage(db, job, "queued", completed_pages=0, total_pages=document.page_count)
         finish_job(db, job, "pending", stage="queued")
         return
@@ -290,6 +318,11 @@ def process(db, job, role: str) -> None:
                        error_message="질문 생성 설정이 준비되지 않았습니다.")
             return
         course = db.get(Course, document.course_id)
+
+        def save_checkpoint(checkpoint: dict) -> None:
+            lock_job(db, job)
+            learning.pending_batch = deepcopy(checkpoint)
+            db.commit()
 
         def save_batch(pages: list[dict]) -> None:
             lock_job(db, job)
@@ -314,15 +347,19 @@ def process(db, job, role: str) -> None:
                 saved_pages[str(page["page_number"])] = page
             # 질문 행·JSON·진행률을 같이 저장해야 공개된 질문을 재시도 때 다시 만들지 않는다.
             learning.result = {"schema_version": "1.0", "pages": dict(saved_pages)}
+            learning.pending_batch = None
+            db.execute(text("""
+                UPDATE analysis_job SET consecutive_failures = 0, first_failure_at = NULL WHERE id = :id
+            """), {"id": job.id})
             set_job_stage(db, job, "analyzing", completed_pages=len(saved_pages), total_pages=total_pages)
 
-        gemini = Gemini(
-            {"document_id": str(document_id), "job_id": str(job.id), "job_attempt": job.attempt},
-            sink=usage_sink(document_id),
-        )
+        log_tags = {"document_id": str(document_id), "job_id": str(job.id), "job_attempt": job.attempt}
+        gemini = Gemini(log_tags, sink=usage_sink(document_id))
         generate_learning(
             db, gemini, course, learning.extraction, saved_pages=saved_pages,
             on_batch=save_batch, single_batch=True,
+            pending_batch=learning.pending_batch, on_checkpoint=save_checkpoint,
+            log_tags=log_tags,
         )
     complete = len(saved_pages) == total_pages
     finish_job(db, job, "succeeded" if complete else "pending", stage="completed" if complete else "queued")
@@ -335,13 +372,30 @@ def run_job(db, job, role: str) -> None:
         raise
     except ProviderError as error:
         db.rollback()
-        retry = error.retryable and job.attempt < MAX_ATTEMPTS
-        delay = min(30 * 2 ** (job.attempt - 1), 600) if retry else 0
+        lock_job(db, job)
+        failure = db.execute(text("""
+            UPDATE analysis_job SET consecutive_failures = consecutive_failures + 1,
+                first_failure_at = COALESCE(first_failure_at, clock_timestamp())
+            WHERE id = :id
+            RETURNING consecutive_failures,
+                EXTRACT(EPOCH FROM first_failure_at + interval '1 hour' - clock_timestamp()) AS remaining
+        """), {"id": job.id}).first()
+        retry = error.retryable and (
+            failure.remaining > 0 if role == "analyze" else failure.consecutive_failures < MAX_ATTEMPTS
+        )
+        delay = min(30 * 2 ** min(failure.consecutive_failures - 1, 5), 600) if retry else 0
+        code = "AI_TEMPORARY_ERROR" if error.retryable else "AI_REQUEST_FAILED"
+        message = ("질문 생성 또는 논문 검색에서 일시적인 오류가 발생했습니다. 잠시 후 자동으로 다시 시도합니다."
+                   if error.retryable else "질문 생성 요청이 거절되었습니다. 서버 설정을 확인해 주세요.")
+        if error.retryable and role == "analyze":
+            if retry:
+                delay = min(delay, max(1, int(failure.remaining)))
+            else:
+                code = "AI_RETRY_EXHAUSTED"
+                message = "같은 페이지 묶음의 재시도 시간이 1시간을 넘어 분석을 일시 중단했습니다. 다시 시도할 수 있습니다."
         print(f"job {job.id} provider failure: {error}", flush=True)
         finish_job(db, job, "pending" if retry else "failed", stage="queued" if retry else None,
-                   delay=delay, error_code="AI_TEMPORARY_ERROR" if error.retryable else "AI_REQUEST_FAILED",
-                   error_message="질문 생성 서비스에서 응답을 받지 못했습니다. 잠시 후 다시 시도해 주세요."
-                   if error.retryable else "질문 생성 요청이 거절되었습니다. 서버 설정을 확인해 주세요.")
+                   delay=delay, error_code=code, error_message=message)
     except (ClientError, BotoCoreError):
         db.rollback()
         finish_job(db, job, "failed", error_code="PDF_DOWNLOAD_FAILED",
