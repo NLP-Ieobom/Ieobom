@@ -136,13 +136,11 @@ def question_trends(
     assignments = _plan_searches(gemini, course, active)
     now = datetime.now(timezone.utc)
     query_results: dict[str, list[ResearchTrend]] = {}
-    successful_queries: set[str] = set()
     missing: list[str] = []
     for query in assignments:
         cache = db.get(ResearchQueryCache, (course.id, query))
         if cache is not None and now - cache.searched_at < QUERY_CACHE_TTL:
             query_results[query] = [ResearchTrend.model_validate(paper) for paper in cache.papers]
-            successful_queries.add(query)
         else:
             missing.append(query)
 
@@ -153,7 +151,6 @@ def question_trends(
             time.sleep(1.1)
         try:
             raw_by_query[query] = _search(query, now.year)[:PAPERS_PER_QUERY]
-            successful_queries.add(query)
         except ProviderError as error:
             failures[query] = error
 
@@ -178,7 +175,7 @@ def question_trends(
         ))
     if raw_by_query:
         db.commit()
-    if failures and not successful_queries:
+    if failures:
         raise next(iter(failures.values()))
 
     by_question: dict[tuple[int, int], list[ResearchTrend]] = {}
@@ -188,13 +185,4 @@ def question_trends(
             existing.update({paper.paper_id: paper for paper in query_results.get(query, [])})
             by_question[key] = list(existing.values())
 
-    status_by_page = {}
-    for draft in drafts:
-        page_queries = {
-            query for query, questions in assignments.items()
-            if any(page_number == draft.page_number for page_number, _ in questions)
-        }
-        status_by_page[draft.page_number] = (
-            "ready" if not page_queries or page_queries & successful_queries else "unavailable"
-        )
-    return by_question, status_by_page
+    return by_question, {draft.page_number: "ready" for draft in drafts}

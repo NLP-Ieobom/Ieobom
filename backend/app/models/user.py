@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -22,3 +22,6 @@ class User(Base):
     # 관리자는 가입 경로로 못 만든다. 시드 스크립트로만 만든다.
     role: Mapped[str] = mapped_column(String(20), default=UserRole.STUDENT.value)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    extraction_last_served_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    analysis_last_served_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    analysis_priority_turns: Mapped[int] = mapped_column(Integer, default=0, server_default="0")

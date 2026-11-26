@@ -31,3 +31,4 @@ class AnalysisJob(Base):
     locked_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
     locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_served_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

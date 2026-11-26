@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 from threading import Event, Thread
@@ -32,15 +33,17 @@ MAX_ATTEMPTS = int(os.environ.get("WORKER_MAX_ATTEMPTS", "3"))
 DOCLING_HOST_DIR = os.environ["DOCLING_HOST_DIR"]
 INPUT_DIR = Path("/work/input")
 
-CLAIM_SQL = text("""
+CLAIM_EXTRACTION_SQL = text("""
     UPDATE analysis_job
     SET status = 'running', stage = 'downloading',
         locked_by = :worker_id, locked_at = clock_timestamp(), attempt = attempt + 1,
         error_code = NULL, error_message = NULL
     WHERE id = (
-        SELECT id FROM analysis_job
-        WHERE status = 'pending' AND scheduled_at <= now()
-        ORDER BY scheduled_at, id
+        SELECT j.id FROM analysis_job j
+        WHERE j.status = 'pending' AND j.scheduled_at <= now()
+          AND EXISTS (SELECT 1 FROM document d WHERE d.id = j.document_id AND d.user_id = :user_id)
+          AND NOT EXISTS (SELECT 1 FROM document_learning l WHERE l.document_id = j.document_id)
+        ORDER BY j.created_at, j.id
         FOR UPDATE SKIP LOCKED
         LIMIT 1
     )
@@ -65,10 +68,86 @@ def recover_jobs(db) -> None:
     db.commit()
 
 
-def claim_job(db):
+def claim_job(db, role: str):
     # 같은 워커가 같은 작업을 다시 맡아도 이전 실행의 저장 권한은 되살아나지 않아야 한다.
     owner = f"{WORKER_ID[:60]}:{uuid4().hex}"
-    row = db.execute(CLAIM_SQL, {"worker_id": owner}).first()
+    if role == "extract":
+        account = db.execute(text("""
+            SELECT u.id FROM "user" u
+            WHERE EXISTS (
+                SELECT 1 FROM analysis_job j JOIN document d ON d.id = j.document_id
+                WHERE d.user_id = u.id AND j.status = 'pending' AND j.scheduled_at <= now()
+                  AND NOT EXISTS (SELECT 1 FROM document_learning l WHERE l.document_id = d.id)
+            ) AND NOT EXISTS (
+                SELECT 1 FROM analysis_job j JOIN document d ON d.id = j.document_id
+                WHERE d.user_id = u.id AND j.status = 'running'
+                  AND NOT EXISTS (SELECT 1 FROM document_learning l WHERE l.document_id = d.id)
+            )
+            ORDER BY u.extraction_last_served_at NULLS FIRST, u.created_at, u.id
+            FOR UPDATE OF u SKIP LOCKED LIMIT 1
+        """)).first()
+        if account is None:
+            db.commit()
+            return None
+        row = db.execute(CLAIM_EXTRACTION_SQL, {"worker_id": owner, "user_id": account.id}).first()
+        if row is not None:
+            db.execute(text("""
+                UPDATE "user" SET extraction_last_served_at = clock_timestamp() WHERE id = :id
+            """), {"id": account.id})
+        db.commit()
+        return row
+
+    account = db.execute(text("""
+        SELECT u.id, u.analysis_priority_turns FROM "user" u
+        WHERE EXISTS (
+            SELECT 1 FROM analysis_job j
+            JOIN document d ON d.id = j.document_id
+            JOIN document_learning l ON l.document_id = d.id
+            WHERE d.user_id = u.id AND j.status = 'pending' AND j.scheduled_at <= now()
+        ) AND NOT EXISTS (
+            SELECT 1 FROM analysis_job j
+            JOIN document d ON d.id = j.document_id
+            JOIN document_learning l ON l.document_id = d.id
+            WHERE d.user_id = u.id AND j.status = 'running'
+        )
+        ORDER BY u.analysis_last_served_at NULLS FIRST, u.created_at, u.id
+        FOR UPDATE OF u SKIP LOCKED LIMIT 1
+    """)).first()
+    if account is None:
+        db.commit()
+        return None
+    preferred = db.execute(text("""
+        SELECT document_id FROM user_document_progress
+        WHERE user_id = :user_id
+        ORDER BY last_viewed_at DESC, document_id LIMIT 1
+    """), {"user_id": account.id}).scalar()
+    # 우선 문서도 두 차례 뒤에는 다른 문서에 양보한다. API를 기다리는 중에는 선점하지 않는다.
+    picked = db.execute(text("""
+        SELECT j.id, j.document_id FROM analysis_job j
+        JOIN document d ON d.id = j.document_id
+        JOIN document_learning l ON l.document_id = d.id
+        WHERE d.user_id = :user_id AND j.status = 'pending' AND j.scheduled_at <= now()
+        ORDER BY CASE
+            WHEN d.id = :preferred THEN CASE WHEN :turns < 2 THEN 0 ELSE 1 END
+            ELSE CASE WHEN :turns < 2 THEN 1 ELSE 0 END
+        END, j.last_served_at NULLS FIRST, j.created_at, j.id
+        FOR UPDATE OF j SKIP LOCKED LIMIT 1
+    """), {"user_id": account.id, "preferred": preferred, "turns": account.analysis_priority_turns}).first()
+    if picked is None:
+        db.commit()
+        return None
+    row = db.execute(text("""
+        UPDATE analysis_job SET status = 'running', stage = 'analyzing',
+            locked_by = :worker_id, locked_at = clock_timestamp(), last_served_at = clock_timestamp(),
+            attempt = CASE WHEN attempt = 0 OR error_code IS NOT NULL THEN attempt + 1 ELSE attempt END,
+            error_code = NULL, error_message = NULL
+        WHERE id = :id RETURNING id, document_id, attempt, locked_by
+    """), {"worker_id": owner, "id": picked.id}).first()
+    db.execute(text("""
+        UPDATE "user" SET analysis_last_served_at = clock_timestamp(), analysis_priority_turns = :turns
+        WHERE id = :id
+    """), {"id": account.id, "turns": min(account.analysis_priority_turns + 1, 2)
+            if picked.document_id == preferred else 0})
     db.commit()
     return row
 
@@ -165,13 +244,13 @@ def run_docling(pdf_path: Path, output_path: Path, document_id) -> dict | None:
     return payload
 
 
-def process(db, job) -> None:
+def process(db, job, role: str) -> None:
     document_id = job.document_id
     document = db.get(Document, document_id)
     if document is None:
         raise ValueError("Analysis job is missing its document")
     learning = db.get(DocumentLearning, document_id)
-    if learning is None:
+    if role == "extract":
         # 중단된 Docling 컨테이너가 늦게 끝나도 새 실행의 파일을 덮어쓰지 않는다.
         filename = f"{job.id}-{job.locked_by.rsplit(':', 1)[-1]}"
         pdf_path = INPUT_DIR / f"{filename}.pdf"
@@ -196,6 +275,10 @@ def process(db, job) -> None:
             {"id": uuid4(), "document_id": document_id, "page_number": page["page_number"]}
             for page in extraction["pages"]
         ]).on_conflict_do_nothing(index_elements=[DocumentPage.document_id, DocumentPage.page_number]))
+        document.page_count = len(extraction["pages"])
+        set_job_stage(db, job, "queued", completed_pages=0, total_pages=document.page_count)
+        finish_job(db, job, "pending", stage="queued")
+        return
 
     total_pages = len(learning.extraction["pages"])
     document.page_count = total_pages
@@ -237,13 +320,17 @@ def process(db, job) -> None:
             {"document_id": str(document_id), "job_id": str(job.id), "job_attempt": job.attempt},
             sink=usage_sink(document_id),
         )
-        generate_learning(db, gemini, course, learning.extraction, saved_pages=saved_pages, on_batch=save_batch)
-    finish_job(db, job, "succeeded", stage="completed")
+        generate_learning(
+            db, gemini, course, learning.extraction, saved_pages=saved_pages,
+            on_batch=save_batch, single_batch=True,
+        )
+    complete = len(saved_pages) == total_pages
+    finish_job(db, job, "succeeded" if complete else "pending", stage="completed" if complete else "queued")
 
 
-def run_job(db, job) -> None:
+def run_job(db, job, role: str) -> None:
     try:
-        process(db, job)
+        process(db, job, role)
     except JobLeaseLost:
         raise
     except ProviderError as error:
@@ -272,11 +359,20 @@ def run_job(db, job) -> None:
 
 
 def main() -> None:
+    role = sys.argv[1] if len(sys.argv) > 1 else "analyze"
+    if role not in {"extract", "analyze"}:
+        raise SystemExit("worker role must be extract or analyze")
     print(f"worker {WORKER_ID} started", flush=True)
     while True:
+        # 이전 워커가 종료돼도 Docling 컨테이너는 남을 수 있어 추출을 겹쳐 실행하지 않는다.
+        if role == "extract" and subprocess.check_output(
+            ["docker", "ps", "-q", "--filter", "name=ieobom-docling-"], text=True,
+        ).strip():
+            time.sleep(POLL_INTERVAL_SEC)
+            continue
         with SessionLocal() as db:
             recover_jobs(db)
-            claimed = claim_job(db)
+            claimed = claim_job(db, role)
             if claimed is None:
                 time.sleep(POLL_INTERVAL_SEC)
                 continue
@@ -285,7 +381,7 @@ def main() -> None:
             thread = Thread(target=heartbeat, args=(claimed, stop), daemon=True)
             thread.start()
             try:
-                run_job(db, claimed)
+                run_job(db, claimed, role)
             except JobLeaseLost:
                 db.rollback()
                 print(f"job {claimed.id} ownership expired; result discarded", flush=True)
