@@ -186,11 +186,7 @@ def _generate_checked(gemini, instructions, data, schema, check, call):
 def _get_research(db, gemini, course, drafts):
     if not course.is_trend_enabled:
         return {}, {draft.page_number: "disabled" for draft in drafts}
-    try:
-        return question_trends(db, gemini, course, drafts)
-    except ProviderError as error:
-        print(f"Question research unavailable for {course.id}: {error}", flush=True)
-        return {}, {draft.page_number: "unavailable" for draft in drafts}
+    return question_trends(db, gemini, course, drafts)
 
 
 def _select_links(db, gemini, course, drafts, papers_by_question, has_profiles, semester_order, search):
@@ -297,6 +293,7 @@ def generate_learning(
     db: Session, gemini: Gemini, course: Course, extraction: dict, *, search=find_candidates,
     saved_pages: dict[str, dict] | None = None,
     on_batch: Callable[[list[dict]], None] | None = None,
+    single_batch: bool = False,
 ) -> dict:
     """Turn team extraction v1 JSON into the learning JSON stored per document.
 
@@ -411,6 +408,8 @@ def generate_learning(
         if on_batch is not None:
             on_batch(completed)
         results.update({str(page["page_number"]): page for page in completed})
+        if single_batch:
+            break
     return {"schema_version": "1.0", "pages": results}
 
 

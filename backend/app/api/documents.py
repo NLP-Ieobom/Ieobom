@@ -63,10 +63,12 @@ def _get_owned_document(
     return document
 
 
-def _check_page_number(document: Document, page_number: int) -> None:
+def _check_page_number(document: Document, page_number: int, *, allow_unknown_count: bool = False) -> None:
     if document.status != DocumentStatus.UPLOADED.value:
         raise HTTPException(status_code=409, detail="document not uploaded yet")
     if document.page_count is None:
+        if allow_unknown_count:
+            return
         raise HTTPException(status_code=409, detail="document page count not available yet")
     if page_number > document.page_count:
         raise HTTPException(status_code=422, detail="page number exceeds document page count")
@@ -195,7 +197,8 @@ def get_status(
         can_retry=bool(job and document.status == DocumentStatus.UPLOADED.value
                        and (job.status == "failed" or (job.status == "succeeded" and job.stage == "analysis_skipped"))
                        and os.environ.get("GEMINI_API_KEY", "").strip()),
-        next_retry_at=job.scheduled_at if job and job.status == "pending" and job.attempt > 0 else None,
+        next_retry_at=job.scheduled_at
+        if job and job.status == "pending" and job.attempt > 0 and job.error_code else None,
     )
 
 
@@ -292,7 +295,7 @@ def record_page_view(
     current_user: User = Depends(get_current_user),
 ) -> DocumentProgressResponse:
     document = _get_owned_document(db, document_id, current_user)
-    _check_page_number(document, payload.page_number)
+    _check_page_number(document, payload.page_number, allow_unknown_count=True)
 
     db.execute(insert(UserPageView).values(
         user_id=current_user.id, document_id=document.id, page_number=payload.page_number,
@@ -319,7 +322,7 @@ def get_page_note(
     current_user: User = Depends(get_current_user),
 ) -> NoteResponse:
     document = _get_owned_document(db, document_id, current_user)
-    _check_page_number(document, page_number)
+    _check_page_number(document, page_number, allow_unknown_count=True)
     page = db.query(DocumentPage).filter_by(document_id=document.id, page_number=page_number).first()
     note = db.query(UserNote).filter_by(document_page_id=page.id).first() if page else None
     return NoteResponse(document_id=document.id, page_number=page_number, content=note.content if note else None)
@@ -334,7 +337,7 @@ def save_page_note(
     current_user: User = Depends(get_current_user),
 ) -> NoteResponse:
     document = _get_owned_document(db, document_id, current_user)
-    _check_page_number(document, page_number)
+    _check_page_number(document, page_number, allow_unknown_count=True)
 
     # 추출 워커도 페이지를 만들기 때문에 동시에 실행돼도 같은 페이지 ID를 쓴다.
     page_id = db.execute(insert(DocumentPage).values(

@@ -250,7 +250,7 @@ class LearningContractTest(TestCase):
             [["p2-q1-r1"], ["p2-q2-r1"]],
         )
 
-    def test_research_keeps_partial_results_when_one_question_search_fails(self):
+    def test_research_caches_successes_but_waits_when_one_question_search_fails(self):
         self.course.is_trend_enabled = True
         self.set_questions([make_question("조인 비용은?"), make_question("어떤 이상이 줄어드나요?")])
         draft = self.gemini.generate.return_value
@@ -270,14 +270,13 @@ class LearningContractTest(TestCase):
             patch("app.services.research.time.sleep"),
             redirect_stdout(StringIO()),
         ):
-            page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
-        # 두 번째 질문의 검색어는 네 번 모두 429지만 첫 질문의 논문으로 계속한다
+            with self.assertRaisesRegex(ProviderError, "test 429"):
+                generate_learning(self.db, self.gemini, self.course, self.extraction)
+        # 성공한 검색은 캐시에 남기되 검색 오류를 논문 없음으로 확정하지 않는다.
         self.assertEqual(search.call_count, 5)
-        self.assertEqual(page["questions"][0]["trends"][0]["paper_id"], paper_id)
-        self.assertEqual(page["questions"][0]["trends"][0]["source"], "semantic_scholar")
         self.db.commit.assert_called_once()
 
-    def test_total_search_failure_marks_research_unavailable_without_fake_papers(self):
+    def test_total_search_failure_waits_without_publishing_questions(self):
         self.course.is_trend_enabled = True
         self.set_questions([make_question("조인 비용은?"), make_question("어떤 이상이 줄어드나요?")])
         draft = self.gemini.generate.return_value
@@ -289,13 +288,12 @@ class LearningContractTest(TestCase):
             patch("app.services.research.time.sleep"),
             redirect_stdout(StringIO()),
         ):
-            page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
+            with self.assertRaisesRegex(ProviderError, "test 429"):
+                generate_learning(self.db, self.gemini, self.course, self.extraction)
         self.assertEqual(search.call_count, 4)
-        self.assertEqual(page["research_status"], "unavailable")
-        self.assertEqual([question["trends"] for question in page["questions"]], [[], []])
         self.db.commit.assert_not_called()
 
-    def test_invalid_research_plan_keeps_questions_available(self):
+    def test_invalid_research_plan_does_not_publish_questions(self):
         self.course.is_trend_enabled = True
         self.set_questions([make_question("조인 비용은?"), make_question("어떤 이상이 줄어드나요?")])
         draft = self.gemini.generate.return_value
@@ -303,9 +301,8 @@ class LearningContractTest(TestCase):
             draft, *[make_search_plan(([1], "database normalization"))] * 3,
         ]
         with redirect_stdout(StringIO()):
-            page = generate_learning(self.db, self.gemini, self.course, self.extraction)["pages"]["2"]
-        self.assertEqual(page["research_status"], "unavailable")
-        self.assertEqual([question["trends"] for question in page["questions"]], [[], []])
+            with self.assertRaisesRegex(ProviderError, "Invalid research query question references"):
+                generate_learning(self.db, self.gemini, self.course, self.extraction)
 
     def test_follow_up_uses_same_page_evidence(self):
         page = self.extraction["pages"][1]

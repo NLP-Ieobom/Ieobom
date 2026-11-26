@@ -53,7 +53,7 @@ services:
     image: ${ECR_REGISTRY}/ieobom-backend:${IMAGE_TAG}
     container_name: ieobom-worker
     restart: unless-stopped
-    command: ["python", "-m", "app.worker.run"]
+    command: ["python", "-m", "app.worker.run", "analyze"]
     depends_on:
       backend:
         condition: service_healthy
@@ -61,6 +61,25 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    environment:
+      WORKER_ID: question-worker
+
+  extractor:
+    image: ${ECR_REGISTRY}/ieobom-backend:${IMAGE_TAG}
+    container_name: ieobom-extractor
+    restart: unless-stopped
+    command: ["python", "-m", "app.worker.run", "extract"]
+    depends_on:
+      backend:
+        condition: service_healthy
+      worker:
+        condition: service_started
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      WORKER_ID: extraction-worker
     # docker.sock을 공유해서 host의 docling 이미지를 실행한다.
     # bind mount 경로는 host 기준이라 워커 자신도 같은 호스트 디렉터리를 입출력 경로로 마운트해 둔다.
     volumes:
