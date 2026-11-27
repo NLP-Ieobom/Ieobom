@@ -184,12 +184,20 @@ def _generate_checked(gemini, instructions, data, schema, check, call):
             print(f"Regenerating {schema.__name__} after invalid output: {error}", flush=True)
 
 
-def _get_research(db, gemini, course, drafts, checkpoint, on_checkpoint, log_tags):
+def _get_research(
+    db, gemini, course, drafts, topics, on_topics, checkpoint, on_checkpoint, log_tags,
+):
     if not course.is_trend_enabled:
         return {}, {draft.page_number: "disabled" for draft in drafts}
-    return question_trends(
-        db, gemini, course, drafts, checkpoint=checkpoint, on_checkpoint=on_checkpoint, log_tags=log_tags,
-    )
+    try:
+        return question_trends(
+            db, gemini, course, drafts, topics=topics, on_topics=on_topics,
+            checkpoint=checkpoint, on_checkpoint=on_checkpoint, log_tags=log_tags,
+        )
+    except ProviderError as error:
+        # 논문 검색어 생성·요약 오류가 이미 생성한 질문의 공개를 막지 않는다.
+        print(f"Research enrichment unavailable for {course.id}: {error}", flush=True)
+        return {}, {draft.page_number: "unavailable" for draft in drafts}
 
 
 def _select_links(db, gemini, course, drafts, papers_by_question, has_profiles, semester_order, search):
@@ -299,6 +307,8 @@ def generate_learning(
     single_batch: bool = False,
     pending_batch: dict | None = None,
     on_checkpoint: Callable[[dict], None] | None = None,
+    research_topics: list[dict] | None = None,
+    on_research_topics: Callable[[list[dict]], None] | None = None,
     log_tags: dict | None = None,
 ) -> dict:
     """Turn team extraction v1 JSON into the learning JSON stored per document.
@@ -334,6 +344,7 @@ def generate_learning(
     course_context = {"name": course.name, "topics": profile.topics if profile is not None else []}
     semester_order = profile.semester_order if profile is not None else None
     checkpoint = deepcopy(pending_batch) if pending_batch is not None else {}
+    research_topics = research_topics if research_topics is not None else []
     for offset in range(0, len(pages), BATCH_SIZE):
         batch = [page for page in pages[offset:offset + BATCH_SIZE] if str(page["page_number"]) not in results]
         if not batch:
@@ -396,12 +407,22 @@ def generate_learning(
             if on_checkpoint is not None:
                 on_checkpoint(checkpoint)
         papers_by_question, research_statuses = _get_research(
-            db, gemini, course, list(drafts.values()), checkpoint, on_checkpoint, log_tags,
+            db, gemini, course, list(drafts.values()), research_topics, on_research_topics,
+            checkpoint, on_checkpoint, log_tags,
         )
-        links = _select_links(
-            db, gemini, course, list(drafts.values()), papers_by_question,
-            has_profiles, semester_order, search,
-        )
+        try:
+            links = _select_links(
+                db, gemini, course, list(drafts.values()), papers_by_question,
+                has_profiles, semester_order, search,
+            )
+        except ProviderError as error:
+            # 추천 선택 실패도 질문 생성 결과와 근거까지 버릴 이유는 없다.
+            print(f"Course and paper selection unavailable for {course.id}: {error}", flush=True)
+            links = {}
+            research_statuses = {
+                number: "unavailable" if status == "ready" else status
+                for number, status in research_statuses.items()
+            }
         completed = []
         for page in batch:
             number = page["page_number"]

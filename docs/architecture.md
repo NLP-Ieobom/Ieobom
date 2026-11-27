@@ -70,7 +70,7 @@ Gemini 설정이 없으면 추출만 저장하고 `succeeded/analysis_skipped`�
 | 공용 커리큘럼·과목·과목 간 관계 | `curriculum`, `course`, `course_relation` |
 | 사용자 수강 상태 | `user_course` |
 | 원본 파일 정보·페이지 번호 | `document`, `document_page` |
-| 추출 원문·공개 결과·미완료 묶음 | `document_learning`의 `extraction`, `result`, `pending_batch` JSONB |
+| 추출 원문·공개 결과·미완료 묶음·연구 주제 | `document_learning`의 `extraction`, `result`, `pending_batch`, `research_topics` JSONB |
 | 질문·해설·근거 좌표·추천 결과 | `question` |
 | 질문 저장 표시·페이지 메모 | `saved_question`, `user_note` |
 | 사용자별 페이지 채팅 질문·답변·응답 유형·근거 ID | `page_chat` |
@@ -94,22 +94,22 @@ Gemini 설정이 없으면 추출만 저장하고 `succeeded/analysis_skipped`�
 별도 표시한다. 추천 결과는 공식 선수과목 관계가 아니다. 커리큘럼 지도는 `course_relation`에 등록된
 관계를 보여 주며 질문별 추천과 구분한다.
 
-연구 동향은 `course.is_trend_enabled`가 켜진 과목만 생성한다. 같은 페이지의 두 질문이 같은 연구 주제면
-검색어 하나로 묶고, 주제가 다를 때만 각각 영어 검색어를 만든다. Semantic Scholar 검색 결과는 Gemini가
-초록에 근거해 요약하고 `과목 + 정규화된 검색어`별로 30일간 재사용한다. 각 질문에는 자신이 속한
-검색어의 후보만 전달하며, 직접 관련된 후보가 없으면 빈 목록을 저장한다. 검색 오류가 남은 묶음은
-공개하지 않고 재시도한다. 성공한 검색 캐시는 유지한다. 질문과 과목·논문 연결 결과는 함께 공개한다.
+연구 동향은 `course.is_trend_enabled`가 켜진 과목만 생성한다. Gemini가 새 질문을 문서에 누적한 기존
+연구 주제에 먼저 배정하고, 맞는 주제가 없을 때만 새 주제와 영어 검색어를 만든다. 기존 후보가 현재
+질문에 직접 관련되지 않을 때만 보충 검색하며 주제당 검색어는 최대 세 개다. Semantic Scholar 검색
+결과는 Gemini가 초록에 근거해 요약하고 문서 주제와 `과목 + 정규화된 검색어` 캐시에 함께 저장한다.
+외부 검색·요약·추천 선택이 실패해도 질문은 공개하며 해당 페이지는 `research_status=unavailable`로 둔다.
 
 Semantic Scholar 로그는 워커 표준 출력에 JSON 한 줄씩 남긴다. 문서·잡·과목 ID, 페이지 번호,
 검색어와 UTC 시각으로 추적한다. `semantic_scholar_request_started`와
 `semantic_scholar_request_finished`는 `search_id`와 `request_attempt`로 짝지으며,
 종료 이벤트의 `status`로 성공·실패를 센다. 시작만 있는 호출은 중단 여부를 확인해야 한다.
-`elapsed_ms`는 한 번의 요청과 응답 처리 시간이고, `search_elapsed_ms`는 같은 검색의 재시도 대기를
-포함한 누적 시간이라 마지막 종료 이벤트 값만 사용한다. 실패에는 HTTP 오류 코드, 오류 내용,
-재시도 여부와 예정 대기 시간을 남긴다. 성공의 `paper_count`는 검증을 통과한 논문 수다.
-`semantic_scholar_cache`의 `status`는 검색어 캐시의 hit/miss이며, `source`가 `checkpoint`이면
-캐시 miss여도 저장한 검색 응답을 재사용하므로 API를 호출하지 않는다. 이 로그는 DB에 저장하지
-않으며, 현재 Docker 설정에서는 컨테이너를 교체하면 이전 로그가 사라진다.
+`elapsed_ms`는 한 번의 요청과 응답 처리 시간이다. Semantic Scholar 요청은 검색어마다 한 번만 보내며
+실패를 같은 호출 안에서 반복하지 않는다. 429는 문서 주제에 15분 쿨다운을, 그 밖의 오류는 5분
+쿨다운을 기록한다. 성공의 `paper_count`는 검증을 통과한 논문 수다. `semantic_scholar_cache`의
+`status`는 검색어 캐시의 hit/miss/cooldown이며, `source`가 `checkpoint`이면 저장한 검색 응답을
+재사용하므로 API를 호출하지 않는다. 이 로그는 DB에 저장하지 않으며, 현재 Docker 설정에서는
+컨테이너를 교체하면 이전 로그가 사라진다.
 
 ## 실패와 복구
 
