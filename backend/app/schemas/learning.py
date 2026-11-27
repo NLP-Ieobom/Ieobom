@@ -104,19 +104,31 @@ class PageSelections(StructuredOutput):
     pages: list[PageSelection]
 
 
-class ResearchSearch(StructuredOutput):
-    # 같은 쪽의 비슷한 질문은 한 검색으로 묶고, 서로 다른 질문만 별도 검색한다.
+ResearchQuery = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+
+
+class ResearchTopicProposal(StructuredOutput):
+    # 이 응답 안에서만 쓰는 별칭이다. 서버가 저장용 UUID로 바꾼다.
+    topic_id: Text
+    name: Text
+    query: ResearchQuery
+
+
+class ResearchTopicGroup(StructuredOutput):
     question_numbers: list[int] = Field(min_length=1, max_length=2)
-    query: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+    topic_id: Text
+    # 기존 후보가 현재 질문에 맞지 않을 때만 더 구체적인 검색어를 넣는다.
+    supplemental_query: ResearchQuery | None = None
 
 
-class PageResearchSearches(StructuredOutput):
+class PageResearchTopics(StructuredOutput):
     page_number: int
-    searches: list[ResearchSearch] = Field(min_length=1, max_length=2)
+    groups: list[ResearchTopicGroup] = Field(min_length=1, max_length=2)
 
 
-class ResearchSearchPlan(StructuredOutput):
-    pages: list[PageResearchSearches]
+class ResearchTopicPlan(StructuredOutput):
+    new_topics: list[ResearchTopicProposal]
+    pages: list[PageResearchTopics]
 
 
 class PaperSummary(StructuredOutput):

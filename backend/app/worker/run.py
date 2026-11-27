@@ -318,10 +318,16 @@ def process(db, job, role: str) -> None:
                        error_message="질문 생성 설정이 준비되지 않았습니다.")
             return
         course = db.get(Course, document.course_id)
+        research_topics = list(learning.research_topics or [])
 
         def save_checkpoint(checkpoint: dict) -> None:
             lock_job(db, job)
             learning.pending_batch = deepcopy(checkpoint)
+            db.commit()
+
+        def save_research_topics(topics: list[dict]) -> None:
+            lock_job(db, job)
+            learning.research_topics = deepcopy(topics)
             db.commit()
 
         def save_batch(pages: list[dict]) -> None:
@@ -359,6 +365,7 @@ def process(db, job, role: str) -> None:
             db, gemini, course, learning.extraction, saved_pages=saved_pages,
             on_batch=save_batch, single_batch=True,
             pending_batch=learning.pending_batch, on_checkpoint=save_checkpoint,
+            research_topics=research_topics, on_research_topics=save_research_topics,
             log_tags=log_tags,
         )
     complete = len(saved_pages) == total_pages

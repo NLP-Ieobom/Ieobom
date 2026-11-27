@@ -395,7 +395,7 @@ UUID와 저장 표시는 예시 값이다. 실제 화면은 각 요청에서 받
 추천 과목의 `previous`·`next`는 교육과정의 편성 학기 기준이다. 실제 수강 여부는 `enrollment_status`를 쓴다.
 후보 데이터나 관련 결과가 없으면 `related_courses=[]`가 정상이며 공식 선수 관계로 표시하지 않는다.
 `research_status=disabled`는 과목 설정 꺼짐이다. `unavailable`은 이전 버전에서 저장된 동향 생성 실패 결과에 남아 있을 수 있다.
-새 분석은 논문 검색 오류가 남으면 해당 묶음을 공개하지 않고 재시도한다. 검색이 성공했지만 관련 논문이 없으면 `ready`와 빈 목록을 반환한다.
+새 분석은 논문 검색 오류가 있어도 질문을 공개하고 해당 페이지를 `unavailable`로 반환한다. 검색이 성공했지만 관련 논문이 없으면 `ready`와 빈 목록을 반환한다.
 `ready`여도 질문에 맞는 결과가 없으면 `trends=[]`일 수 있다. 새 분석의 논문은
 `source=semantic_scholar`다. 이전 버전에 저장된 `source=gemini`, `year=null` 연구 방향도 조회될 수 있다.
 
