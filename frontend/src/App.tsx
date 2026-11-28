@@ -481,18 +481,18 @@ function QuestionDeepDive({ question, onClose, onOpenSource }: { question: Quest
   const { analysis, error, retry } = useQuestionAnalysis(question, true)
   const [openStep, setOpenStep] = useState(0)
   const heading = useRef<HTMLHeadingElement>(null)
+  const previousCourses = question.related_courses?.filter(course => course.relation === "previous") ?? []
+  const nextCourses = question.related_courses?.filter(course => course.relation === "next") ?? []
   useEffect(() => { heading.current?.focus() }, [])
   const steps: { title: string; icon: IconName; content: ReactNode }[] = [
     { title: "관련 개념", icon: "brain", content: <>{!analysis && !error && <p role="status">개념을 불러오고 있어요.</p>}{error && <p role="alert">{error}<button onClick={retry}>다시 시도</button></p>}{analysis && (analysis.concepts.length ? <div className="deep-concept-list">{analysis.concepts.map(concept => <span key={concept.name}>{concept.name}</span>)}</div> : <p>등록된 개념이 없어요.</p>)}</> },
-    ...(question.prerequisite ? [{ title: "먼저 알아둘 지식", icon: "book" as IconName, content: <p>{question.prerequisite}</p> }] : []),
-    ...(question.explanation ? [{ title: question.explanation.headline || "개념 이해하기", icon: "spark" as IconName, content: <><p>{question.explanation.body}</p><ol>{question.explanation.flow.map((step, index) => <li key={index}>{step}</li>)}</ol></> }] : []),
-    ...(question.learning_order ? [{ title: "학습 순서", icon: "layers" as IconName, content: <p>{question.learning_order}</p> }] : []),
-    ...(question.first_activity ? [{ title: "직접 해보기", icon: "play" as IconName, content: <p>{question.first_activity}</p> }] : []),
-    ...((question.related_courses?.length || question.trends?.length) ? [{ title: "연관 과목과 연구로 확장하기", icon: "map" as IconName, content: <QuestionDetails question={{ ...question, explanation: null, prerequisite: "", learning_order: "", first_activity: "", recommended_reason: "" }} /> }] : []),
+    { title: "이전 과목", icon: "book", content: <RelatedCourseList courses={previousCourses} emptyMessage="연결된 이전 과목이 없어요." /> },
+    { title: "이후 과목", icon: "map", content: <RelatedCourseList courses={nextCourses} emptyMessage="연결된 이후 과목이 없어요." /> },
+    { title: "연구 동향", icon: "chart", content: <ResearchTrendList trends={question.trends ?? []} /> },
   ]
   return <div className="deep-learning-page">
     <div className="deep-page-actions"><button className="deep-back-button" onClick={onClose}>← 이전 화면으로</button><button className="evidence-button" disabled={!onOpenSource} onClick={onOpenSource}>원문 페이지 열기<Icon name="file" size={14} /></button></div>
-    <header className="page-header"><div><span className="eyebrow">GUIDED LEARNING PATH</span><h1 ref={heading} tabIndex={-1}>질문에서 이해까지, 근거를 따라가요</h1><p>필요한 개념부터 학습과 탐구까지, 한 단계씩 깊이 있게 살펴보세요.</p></div></header>
+    <header className="page-header"><div><span className="eyebrow">GUIDED LEARNING PATH</span><h1 ref={heading} tabIndex={-1}>질문에서 이해까지, 근거를 따라가요</h1><p>관련 개념부터 과목의 흐름과 연구 동향까지 한눈에 살펴보세요.</p></div></header>
     <div className="guide-layout">
       <section className="guide-question"><div className="guide-question-label"><Icon name="spark" size={16} />선택한 심화 질문</div><h2>{question.content}</h2><div className="guide-meta"><span>{question.page_number}페이지</span><i /><span>{questionLabels[question.question_type] ?? question.question_type}</span></div>{question.recommended_reason && <p className="deep-reason">{question.recommended_reason}</p>}</section>
       <div className="step-timeline">{steps.map((step, index) => <article key={step.title} className={`step-card ${openStep === index ? "open" : ""}`}><button className="step-summary" aria-expanded={openStep === index} aria-controls={`deep-step-${index}`} onClick={() => setOpenStep(openStep === index ? -1 : index)}><span className="step-number">{String(index + 1).padStart(2, "0")}</span><span className="step-icon"><Icon name={step.icon} size={20} /></span><span className="step-title"><small>STEP {index + 1}</small><strong>{step.title}</strong></span><span className="step-toggle">{openStep === index ? "−" : "+"}</span></button>{openStep === index && <div id={`deep-step-${index}`} className="step-content">{step.content}</div>}</article>)}</div>
@@ -500,13 +500,18 @@ function QuestionDeepDive({ question, onClose, onOpenSource }: { question: Quest
   </div>
 }
 
-function QuestionDetails({ question }: { question: Question }) {
-  return <div className="question-detail">
-    {question.explanation && <div className="question-explanation"><strong>{question.explanation.headline}</strong><p>{question.explanation.body}</p><ol>{question.explanation.flow.map((step, index) => <li key={index}>{step}</li>)}</ol></div>}
-    {([["추천 이유", question.recommended_reason], ["선수 지식", question.prerequisite], ["학습 순서", question.learning_order], ["첫 활동", question.first_activity]]).map(([label, value]) => value && <p key={label}><strong>{label}</strong><br />{value}</p>)}
-    {Boolean(question.related_courses?.length) && <section className="question-related"><h4>AI 추천 연관 과목</h4>{question.related_courses?.map(course => <div key={course.course_id}><strong>{course.name}</strong><small>{({ previous: "앞서 배우는 과목", next: "다음에 배우는 과목", related: "함께 살펴볼 과목" })[course.relation]}{course.enrollment_status && ` · ${{ not_enrolled: "미수강", in_progress: "수강 중", completed: "수강 완료" }[course.enrollment_status]}`}</small><p>{course.reason}</p>{course.next_topic && <p>다음 탐구: {course.next_topic}</p>}</div>)}</section>}
-    {Boolean(question.trends?.length) && <section className="question-related"><h4>관련 연구와 탐구 방향</h4>{question.trends?.map(trend => <div key={trend.paper_id}><small>{trend.source === "gemini" ? "연구 방향 안내" : `관련 논문${trend.year ? ` · ${trend.year}` : ""}`}</small>{safeExternalUrl(trend.url) ? <a href={safeExternalUrl(trend.url)} target="_blank" rel="noreferrer">{trend.title}<Icon name="external" size={12} /></a> : <strong>{trend.title}</strong>}<p>{trend.summary}</p></div>)}</section>}
-  </div>
+function RelatedCourseList({ courses, emptyMessage }: { courses: NonNullable<Question["related_courses"]>; emptyMessage: string }) {
+  if (!courses.length) return <p>{emptyMessage}</p>
+  return <section className="question-related" aria-label="연관 과목">
+    {courses.map(course => <div key={course.course_id}><strong>{course.name}</strong>{course.enrollment_status && <small>{({ not_enrolled: "미수강", in_progress: "수강 중", completed: "수강 완료" })[course.enrollment_status]}</small>}<p>{course.reason}</p>{course.next_topic && <p>다음 탐구: {course.next_topic}</p>}</div>)}
+  </section>
+}
+
+function ResearchTrendList({ trends }: { trends: NonNullable<Question["trends"]> }) {
+  if (!trends.length) return <p>등록된 연구 동향이 없어요.</p>
+  return <section className="question-related" aria-label="연구 동향">
+    {trends.map(trend => <div key={trend.paper_id}><small>{trend.source === "gemini" ? "연구 방향 안내" : `관련 논문${trend.year ? ` · ${trend.year}` : ""}`}</small>{safeExternalUrl(trend.url) ? <a href={safeExternalUrl(trend.url)} target="_blank" rel="noreferrer">{trend.title}<Icon name="external" size={12} /></a> : <strong>{trend.title}</strong>}<p>{trend.summary}</p></div>)}
+  </section>
 }
 
 function QuestionCard({ question, onChange, onOpen, compact = false, number = 1, selected = false }: { question: Question; onChange: (question: Question) => void; onOpen?: () => void; compact?: boolean; number?: number; selected?: boolean }) {
