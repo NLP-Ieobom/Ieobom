@@ -476,7 +476,7 @@ type DocumentProgressResponse = DocumentReadingProgress & {
 
 | API | 입력 | 성공 | 추가 오류 |
 | --- | --- | --- | --- |
-| `POST /documents/{document_id}/pages/{page_number}/ask` | `{question: string}` | `200 StoredChatExchange` | `404` 문서·페이지 없음, `409` 업로드·추출 미완료, `422` 페이지 범위·질문 길이 오류, `503` 설정 없음·DB 저장 실패, `502` 생성 실패 |
+| `POST /documents/{document_id}/pages/{page_number}/ask` | `{question: string}` | `200 StoredChatExchange` | `404` 문서·페이지 없음, `409` 업로드·추출 미완료, `422` 페이지 범위·질문 길이 오류, `503` 설정 없음·Gemini 일시 오류·DB 저장 실패, `502` 응답 형식·근거 검증 실패 |
 | `GET /documents/{document_id}/pages/{page_number}/chat` | 쿼리 `limit: 1~50`, 기본 `20` | `200 {document_id: UUID, page_number: number, exchanges: StoredChatExchange[]}` | `409` 업로드·추출 미완료, `422` 페이지 범위·limit 오류 |
 | `GET /health` | 없음. 인증 불필요, `/api/v1` 밖 | `200 {status: "ok"}` | API 프로세스 응답 확인용 |
 
@@ -494,7 +494,8 @@ type StoredChatExchange = {
 `question`은 앞뒤 공백을 제거한 뒤 1~1,000자다. 서버가 같은 사용자·문서·페이지의 최근 3쌍을
 오래된 순서로 Gemini에 전달한다. 기존 클라이언트가 보내는 `history`는 무시한다.
 질문·답변을 DB에 함께 저장한 뒤 `200`을 반환하며 인사나 근거 부족 응답도 저장한다.
-Gemini 호출·검증이 실패하면 대화 기록을 만들지 않는다.
+Gemini의 JSON 형식이나 근거 block ID 검증이 실패하면 해당 답변만 최대 세 번 다시 생성한다.
+통신 재시도나 검증 재생성을 모두 마친 뒤에도 실패하면 대화 기록을 만들지 않는다.
 
 ```json
 {

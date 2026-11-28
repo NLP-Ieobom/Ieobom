@@ -1,3 +1,4 @@
+import json
 import os
 import uuid
 from typing import Annotated
@@ -557,8 +558,16 @@ def ask_about_page(
             {"document_id": str(document_id), "page_number": page_number}, sink=usage_sink(document_id),
         )
         answer = answer_follow_up(gemini, page, payload.question, history)
-    except ProviderError:
-        raise HTTPException(status_code=502, detail="could not generate a grounded answer") from None
+    except ProviderError as error:
+        print(json.dumps({
+            "event": "chat_answer_failed", "document_id": str(document_id), "page_number": page_number,
+            "http_status": error.http_status, "retryable": error.retryable, "error": str(error)[:500],
+        }, ensure_ascii=False), flush=True)
+        status = 503 if error.retryable else 502
+        raise HTTPException(
+            status_code=status,
+            detail="could not generate a grounded answer" if status == 502 else "answer provider unavailable",
+        ) from None
     try:
         # 답변을 생성하는 사이 문서가 삭제됐을 수 있어 저장 직전에 다시 확인한다.
         _get_owned_document(db, document_id, current_user, lock=True)

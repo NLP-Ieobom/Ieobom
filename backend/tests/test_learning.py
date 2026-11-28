@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 
 from pydantic import ValidationError
 
-from app.integrations.learning_http import ProviderError
+from app.integrations.learning_http import ProviderError, ProviderOutputError
 from app.pipelines.docling_output import _pages
 from app.models.learning import CourseLearningProfile
 from app.pipelines.learning import answer_follow_up, generate_learning
@@ -432,6 +432,70 @@ class LearningContractTest(TestCase):
         self.gemini.generate.return_value.evidence_block_ids = ["p1-b1"]
         with self.assertRaisesRegex(ProviderError, "Invalid or duplicate answer evidence"):
             answer_follow_up(self.gemini, page, question)
+
+    def test_follow_up_reads_table_rows_and_regenerates_invalid_evidence(self):
+        page = {
+            "page_number": 8,
+            "width_pt": 720,
+            "height_pt": 405,
+            "blocks": [{
+                "block_id": "p8-table1",
+                "kind": "table",
+                "bbox": [0.1, 0.2, 0.9, 0.8],
+                "text": "요구분석의 당사자",
+                "table": {"cells": [
+                    {"row_start": 0, "column_start": 0, "text": "당사자"},
+                    {"row_start": 0, "column_start": 1, "text": "예시"},
+                    {"row_start": 1, "column_start": 0, "text": "발주자"},
+                    {"row_start": 2, "column_start": 0, "text": "경영자"},
+                    {"row_start": 3, "column_start": 0, "text": "발주 담당자"},
+                    {"row_start": 4, "column_start": 0, "text": "사용자"},
+                ]},
+            }],
+        }
+        invalid = FollowUpAnswer(
+            explanation="발주자, 경영자, 발주 담당자, 사용자입니다.",
+            evidence_block_ids=["invented-table"],
+        )
+        valid = FollowUpAnswer(
+            explanation="발주 관련 당사자는 발주자, 경영자, 발주 담당자, 사용자입니다.",
+            evidence_block_ids=["p8-table1"],
+        )
+        self.gemini.generate.side_effect = [invalid, valid]
+
+        with redirect_stdout(StringIO()):
+            answer = answer_follow_up(self.gemini, page, "발주 관련 당사자가 뭐가 있어?")
+
+        self.assertEqual(answer, valid)
+        self.assertEqual(self.gemini.generate.call_count, 2)
+        self.assertEqual(
+            [call.kwargs["attempt"] for call in self.gemini.generate.call_args_list], [1, 2],
+        )
+        sent_block = self.gemini.generate.call_args.args[1]["page"]["blocks"][0]
+        self.assertIn("발주자", sent_block["text"])
+        self.assertIn("경영자", sent_block["text"])
+        self.assertIn("발주 담당자", sent_block["text"])
+        self.assertIn("사용자", sent_block["text"])
+
+    def test_follow_up_regenerates_invalid_structured_output(self):
+        valid = FollowUpAnswer(explanation="갱신 이상을 줄입니다.", evidence_block_ids=["p2-b1"])
+        self.gemini.generate.side_effect = [
+            ProviderOutputError("Gemini returned invalid structured output"), valid,
+        ]
+
+        with redirect_stdout(StringIO()):
+            answer = answer_follow_up(self.gemini, self.extraction["pages"][1], "왜 분해하나요?")
+
+        self.assertEqual(answer, valid)
+        self.assertEqual(self.gemini.generate.call_count, 2)
+
+    def test_follow_up_does_not_repeat_exhausted_transport_requests(self):
+        self.gemini.generate.side_effect = ProviderError("Gemini 503", http_status=503)
+
+        with self.assertRaisesRegex(ProviderError, "Gemini 503"):
+            answer_follow_up(self.gemini, self.extraction["pages"][1], "왜 분해하나요?")
+
+        self.gemini.generate.assert_called_once()
 
     def test_chat_request_trims_question_and_ignores_client_history(self):
         request = AskRequest(

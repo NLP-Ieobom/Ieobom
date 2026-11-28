@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.integrations.gemini import Gemini
-from app.integrations.learning_http import ProviderError
+from app.integrations.learning_http import ProviderError, ProviderOutputError
 from app.models.course import Course
 from app.models.learning import CourseLearningProfile
 from app.schemas.learning import (
@@ -87,6 +87,9 @@ FOLLOW_UP = """
 - insufficient_evidence: 답을 뒷받침할 내용이 없으면 이 페이지에서 확인 가능한 범위를 짧게 말하고
   도움이 된다면 어떤 페이지나 개념이 더 필요한지 안내하세요. 근거 목록은 비우세요.
 
+표의 각 행은 page.blocks의 text에 ` | `로 구분되어 있습니다. 질문의 답이 표나 본문에 직접 있으면
+빠뜨리지 말고 해당 항목을 모두 답하고, 그 text를 가진 실제 block_id를 evidence_block_ids에 넣으세요.
+본문에 답이 있는데 insufficient_evidence로 분류하거나 block_id를 새로 만들면 잘못된 응답입니다.
 다른 페이지나 이전 답변을 원문 근거로 제시하지 마세요. 모든 답에 같은 소제목이나 마무리 질문을 붙이지 마세요.
 """
 
@@ -134,7 +137,7 @@ def _obvious_exclusion(payload: dict) -> PageAnalysis | None:
 
 def _validate_references(values: Sequence[Hashable], allowed: set, label: str) -> None:
     if len(values) != len(set(values)) or not set(values) <= allowed:
-        raise ProviderError(
+        raise ProviderOutputError(
             f"Invalid or duplicate {label} reference: got {list(values)}, allowed {sorted(allowed, key=str)[:10]}"
         )
 
@@ -175,7 +178,13 @@ def _check_page(draft: PageDraft, page: dict, evidence: set[str], existing: Page
 def _generate_checked(gemini, instructions, data, schema, check, call):
     # 개수·참조 규칙을 어긴 응답은 그 묶음만 다시 요청한다. 한 묶음 때문에 문서 전체를 다시 만들지 않는다.
     for attempt in range(1, OUTPUT_ATTEMPTS + 1):
-        output = gemini.generate(instructions, data, schema, call=call, attempt=attempt)
+        try:
+            output = gemini.generate(instructions, data, schema, call=call, attempt=attempt)
+        except ProviderOutputError as error:
+            if attempt == OUTPUT_ATTEMPTS:
+                raise
+            print(f"Regenerating {schema.__name__} after invalid output: {error}", flush=True)
+            continue
         try:
             return check(output)
         except ProviderError as error:
@@ -454,13 +463,17 @@ def answer_follow_up(
     gemini: Gemini, page: dict, question: str, history: Sequence[ChatExchange] = (),
 ) -> FollowUpAnswer:
     payload = _prompt_page(page)
-    answer = gemini.generate(
+    def check(answer: FollowUpAnswer) -> FollowUpAnswer:
+        _validate_references(
+            answer.evidence_block_ids, {block["block_id"] for block in payload["blocks"]}, "answer evidence"
+        )
+        return answer
+
+    return _generate_checked(
+        gemini,
         FOLLOW_UP,
         {"question": question, "history": [exchange.model_dump() for exchange in history], "page": payload},
         FollowUpAnswer,
-        call="FOLLOW_UP",
+        check,
+        "FOLLOW_UP",
     )
-    _validate_references(
-        answer.evidence_block_ids, {block["block_id"] for block in payload["blocks"]}, "answer evidence"
-    )
-    return answer
