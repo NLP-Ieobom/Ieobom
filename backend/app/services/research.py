@@ -137,10 +137,11 @@ def _plan_topics(
     }
     expected_pages = {draft.page_number: len(draft.questions) for draft in drafts}
     for attempt in range(1, 4):
-        plan = gemini.generate(
-            PLAN, payload, ResearchTopicPlan, call="RESEARCH_TOPICS", attempt=attempt,
-        )
         try:
+            # 응답이 스키마를 못 맞추는 경우도 검증 실패와 같이 재생성한다.
+            plan = gemini.generate(
+                PLAN, payload, ResearchTopicPlan, call="RESEARCH_TOPICS", attempt=attempt,
+            )
             new_aliases = [topic.topic_id for topic in plan.new_topics]
             if len(new_aliases) != len(set(new_aliases)) or set(new_aliases) & set(existing):
                 raise ProviderError("Invalid or duplicate new research topic")
@@ -160,8 +161,8 @@ def _plan_topics(
                     if group.topic_id in proposals and group.supplemental_query is not None:
                         raise ProviderError("New research topics must use their initial query")
             break
-        except ProviderError:
-            if attempt == 3:
+        except ProviderError as error:
+            if attempt == 3 or not error.retryable:
                 raise
 
     alias_to_id = {topic_id: topic_id for topic_id in existing}
