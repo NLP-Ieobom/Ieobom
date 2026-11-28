@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.integrations.gemini import Gemini
-from app.integrations.learning_http import ProviderError
+from app.integrations.learning_http import ProviderError, ProviderOutputError
 from app.integrations.semantic_scholar import search_recent_papers
 from app.models.course import Course
 from app.models.learning import ResearchQueryCache
@@ -162,7 +162,8 @@ def _plan_topics(
                         raise ProviderError("New research topics must use their initial query")
             break
         except ProviderError as error:
-            if attempt == 3 or not error.retryable:
+            # 형식이 깨진 응답은 재시도 불가로 표시되지만 여기서는 다시 생성해야 한다.
+            if attempt == 3 or not (error.retryable or isinstance(error, ProviderOutputError)):
                 raise
 
     alias_to_id = {topic_id: topic_id for topic_id in existing}
