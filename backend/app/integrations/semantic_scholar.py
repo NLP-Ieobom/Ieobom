@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import datetime, timezone
 from urllib.parse import urlencode
@@ -21,7 +22,9 @@ def search_recent_papers(query: str, year: int) -> list[dict]:
     )
     papers = response.get("data") if isinstance(response, dict) else None
     if not isinstance(papers, list) or any(not isinstance(paper, dict) for paper in papers):
-        raise ProviderError("Semantic Scholar returned an invalid paper list")
+        # 200으로 내려오는 한도 초과 응답과 실제 형식 오류를 구분하려면 본문이 필요하다.
+        excerpt = json.dumps(response, ensure_ascii=False)[:300]
+        raise ProviderError(f"Semantic Scholar returned an invalid paper list: {excerpt}")
     now = datetime.now(timezone.utc).isoformat()
     unique = {}
     for paper in papers:
