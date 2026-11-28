@@ -6,7 +6,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
-from app.integrations.learning_http import ProviderError, request_json
+from app.integrations.learning_http import ProviderError, ProviderOutputError, request_json
 
 T = TypeVar("T", bound=BaseModel)
 EMBEDDING_DIM = 1536
@@ -99,7 +99,7 @@ class Gemini:
                 "attempt": attempt, "finish_reason": finish_reason,
                 "reason": " ".join(str(error).split())[:500], "text": raw[:600],
             }, ensure_ascii=False), flush=True)
-            raise ProviderError("Gemini returned invalid structured output") from None
+            raise ProviderOutputError("Gemini returned invalid structured output") from None
 
     def embed(self, texts: list[str], task: str, *, call: str) -> list[list[float]]:
         if not texts:

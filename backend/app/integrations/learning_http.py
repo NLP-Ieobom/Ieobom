@@ -14,6 +14,13 @@ class ProviderError(RuntimeError):
         self.retry_after = retry_after
 
 
+class ProviderOutputError(ProviderError):
+    """The provider replied, but its generated output could not be used safely."""
+
+    def __init__(self, message: str):
+        super().__init__(message, retryable=False)
+
+
 def request_json(url, *, provider, headers, timeout, payload=None):
     request = Request(url, headers={"Content-Type": "application/json", **headers})
     if payload is not None:
