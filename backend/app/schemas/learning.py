@@ -2,7 +2,9 @@ from datetime import datetime
 from typing import Annotated, Literal, Self
 from uuid import UUID
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import (
+    AfterValidator, BaseModel, BeforeValidator, ConfigDict, Field, StringConstraints, model_validator,
+)
 
 
 def nonblank(value: str) -> str:
@@ -105,6 +107,11 @@ class PageSelections(StructuredOutput):
 
 
 ResearchQuery = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+# 보충 검색이 필요 없을 때 Gemini가 null 대신 빈 문자열을 주는 경우가 많아 같이 받는다.
+OptionalResearchQuery = Annotated[
+    ResearchQuery | None,
+    BeforeValidator(lambda value: value.strip() or None if isinstance(value, str) else value),
+]
 
 
 class ResearchTopicProposal(StructuredOutput):
@@ -118,7 +125,7 @@ class ResearchTopicGroup(StructuredOutput):
     question_numbers: list[int] = Field(min_length=1, max_length=2)
     topic_id: Text
     # 기존 후보가 현재 질문에 맞지 않을 때만 더 구체적인 검색어를 넣는다.
-    supplemental_query: ResearchQuery | None = None
+    supplemental_query: OptionalResearchQuery = None
 
 
 class PageResearchTopics(StructuredOutput):
