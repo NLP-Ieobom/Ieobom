@@ -62,10 +62,7 @@ def _log_search(event: str, tags: dict, **fields) -> None:
 
 
 def _search(query: str, year: int, *, tags: dict) -> list[dict]:
-    request_tags = {
-        **tags, "query": query, "request_query": query[:200], "search_id": str(uuid4()),
-        "request_attempt": 1,
-    }
+    request_tags = {**tags, "query": query, "request_query": query[:200], "search_id": str(uuid4())}
     _log_search("semantic_scholar_request_started", request_tags)
     started = time.monotonic()
     try:
@@ -75,13 +72,13 @@ def _search(query: str, year: int, *, tags: dict) -> list[dict]:
             "semantic_scholar_request_finished", request_tags, status="error",
             elapsed_ms=round((time.monotonic() - started) * 1000),
             http_status=error.http_status, error=str(error), retryable=error.retryable,
-            will_retry=False, retry_delay_sec=0,
+            retry_after=error.retry_after,
         )
         raise
     _log_search(
         "semantic_scholar_request_finished", request_tags, status="success",
         elapsed_ms=round((time.monotonic() - started) * 1000),
-        paper_count=len(papers), will_retry=False, retry_delay_sec=0,
+        paper_count=len(papers),
     )
     return papers
 

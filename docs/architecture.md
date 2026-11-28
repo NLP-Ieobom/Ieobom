@@ -102,13 +102,19 @@ Gemini 설정이 없으면 추출만 저장하고 `succeeded/analysis_skipped`�
 
 Semantic Scholar 로그는 워커 표준 출력에 JSON 한 줄씩 남긴다. 문서·잡·과목 ID, 페이지 번호,
 검색어와 UTC 시각으로 추적한다. `semantic_scholar_request_started`와
-`semantic_scholar_request_finished`는 `search_id`와 `request_attempt`로 짝지으며,
-종료 이벤트의 `status`로 성공·실패를 센다. 시작만 있는 호출은 중단 여부를 확인해야 한다.
+`semantic_scholar_request_finished`는 `search_id`로 짝지으며, 종료 이벤트의 `status`로
+성공·실패를 센다. 시작만 있는 호출은 중단 여부를 확인해야 한다.
 `elapsed_ms`는 한 번의 요청과 응답 처리 시간이다. Semantic Scholar 요청은 검색어마다 한 번만 보내며
 실패를 같은 호출 안에서 반복하지 않는다. 429는 문서 주제에 15분 쿨다운을, 그 밖의 오류는 5분
 쿨다운을 기록한다. 성공의 `paper_count`는 검증을 통과한 논문 수다. `semantic_scholar_cache`의
 `status`는 검색어 캐시의 hit/miss/cooldown이며, `source`가 `checkpoint`이면 저장한 검색 응답을
-재사용하므로 API를 호출하지 않는다. 이 로그는 DB에 저장하지 않으며, 현재 Docker 설정에서는
+재사용하므로 API를 호출하지 않는다.
+
+실패 원인을 가리는 응답도 함께 남긴다. HTTP 오류의 `error`에는 응답 본문 앞부분이 들어가고
+`retry_after`에는 `Retry-After` 헤더가 있으면 그 값이 들어간다. 200으로 내려오면서 논문 목록이
+비정상인 응답은 본문 300자까지 오류 메시지에 붙으므로, 한도 초과 응답과 실제 형식 오류를 구분할 수
+있다. Gemini 응답이 스키마를 못 맞추면 `gemini_invalid_output`에 `finish_reason`, 검증 실패 이유,
+응답 텍스트 600자를 남긴다. 이 로그는 DB에 저장하지 않으며, 현재 Docker 설정에서는
 컨테이너를 교체하면 이전 로그가 사라진다.
 
 ## 실패와 복구

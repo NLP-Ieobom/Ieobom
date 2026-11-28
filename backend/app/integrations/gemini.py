@@ -81,16 +81,24 @@ class Gemini:
             f"models/{self.text_model}:generateContent", payload,
             call=call, model=self.text_model, attempt=attempt,
         )
+        finish_reason, raw = None, ""
         try:
             candidate = response["candidates"][0]
-            if candidate.get("finishReason") != "STOP":
-                raise ValueError("Unfinished response")
+            finish_reason = candidate.get("finishReason")
             raw = "".join(
                 part["text"] for part in candidate["content"]["parts"]
                 if "text" in part and not part.get("thought")
             )
+            if finish_reason != "STOP":
+                raise ValueError("Unfinished response")
             return schema.model_validate_json(raw)
-        except (KeyError, IndexError, TypeError, ValueError):
+        except (KeyError, IndexError, TypeError, ValueError) as error:
+            # 응답을 남기지 않으면 미완성 응답인지 스키마 불일치인지 로그로 구분할 수 없다.
+            print(json.dumps({
+                "event": "gemini_invalid_output", **self.tags, "call": call, "model": self.text_model,
+                "attempt": attempt, "finish_reason": finish_reason,
+                "reason": " ".join(str(error).split())[:500], "text": raw[:600],
+            }, ensure_ascii=False), flush=True)
             raise ProviderError("Gemini returned invalid structured output") from None
 
     def embed(self, texts: list[str], task: str, *, call: str) -> list[list[float]]:

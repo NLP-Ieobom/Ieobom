@@ -4,10 +4,14 @@ from urllib.request import Request, urlopen
 
 
 class ProviderError(RuntimeError):
-    def __init__(self, message: str, *, retryable: bool = True, http_status: int | None = None):
+    def __init__(
+        self, message: str, *, retryable: bool = True, http_status: int | None = None,
+        retry_after: str | None = None,
+    ):
         super().__init__(message)
         self.retryable = retryable
         self.http_status = http_status
+        self.retry_after = retry_after
 
 
 def request_json(url, *, provider, headers, timeout, payload=None):
@@ -19,18 +23,26 @@ def request_json(url, *, provider, headers, timeout, payload=None):
             return json.load(response)
     except HTTPError as error:
         status = error.code
+        retry_after = error.headers.get("Retry-After")
         try:
-            body = json.loads(error.read(4096))
-            detail = body.get("error", {}).get("message")
-        except (OSError, ValueError, AttributeError):
-            detail = None
+            raw = error.read(4096).decode("utf-8", "replace")
+        except OSError:
+            raw = ""
         finally:
             error.close()
+        try:
+            detail = json.loads(raw).get("error", {}).get("message")
+        except (ValueError, AttributeError):
+            detail = None
+        if not isinstance(detail, str):
+            # 레이트리밋 응답은 error.message 구조가 아니라 본문을 그대로 남겨야 정체를 알 수 있다.
+            detail = " ".join(raw.split())
         message = f"{provider} returned HTTP {status}"
-        if isinstance(detail, str):
+        if detail:
             message += f": {detail[:500]}"
         raise ProviderError(
             message, retryable=status in (408, 429) or status >= 500, http_status=status,
+            retry_after=retry_after,
         ) from None
     except TimeoutError:
         raise ProviderError(f"{provider} timed out after {timeout}s") from None
